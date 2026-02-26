@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jboss-web xmlns="https://www.jboss.com/xml/ns/javaee"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="https://www.jboss.com/xml/ns/javaee 
+           https://www.jboss.com/xml/ns/javaee/jboss-web_22.xsd"
+           version="22.0">
+    <context-root>penitenciaria-api</context-root>
+</jboss-web>
+
+
