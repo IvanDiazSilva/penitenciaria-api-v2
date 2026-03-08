@@ -1,4 +1,4 @@
-package com.ivan.penitenciaria.api;
+package jwt;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
@@ -7,20 +7,24 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.Priorities;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Context;
 import java.io.IOException;
 
 @Provider
 @Priority(Priorities.AUTHENTICATION)
 public class JwtFilter implements ContainerRequestFilter {
 
+    @Context
+    HttpServletRequest req;  // ← AÑADIDO para setAttribute
+
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         String path = requestContext.getUriInfo().getPath();
         System.out.println("PATH = " + path);
 
-        // PROTEGER solo reos + visitas (path SIN /api/)
-        if (!path.equals("/reos") && !path.equals("/visitas")) {
-            return;  // /login libre
+        if (path.equals("/login")) {
+            return;  // Login libre
         }
 
         String authHeader = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
@@ -36,9 +40,16 @@ public class JwtFilter implements ContainerRequestFilter {
             System.out.println("❌ TOKEN INVÁLIDO");
             requestContext.abortWith(Response.status(401)
                     .entity("{\"error\":\"Token inválido\"}").build());
+            return;
         }
 
-        System.out.println("✅ TOKEN OK");
-    }
+        // ← AÑADIDO: SET ROL para IncidenteResource
+        String username = JwtUtil.getUsername(token);
+        String rol = JwtUtil.getRol(token);
+        System.out.println("✅ TOKEN OK - " + username + " rol=[" + rol + "]");
+        req.setAttribute("username", username);
+        req.setAttribute("rol", rol);  // ← CRÍTICO
 
+        System.out.println("✅ PASANDO A RESOURCE rol=" + rol);
+    }
 }

@@ -1,6 +1,7 @@
-package com.ivan.penitenciaria.api;
+package resources;
 
-import jakarta.inject.Inject;
+import jwt.JwtUtil;
+import dto.LoginRequest;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
@@ -11,6 +12,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import model.Usuario;
 
 @Path("/login")
 @Consumes(MediaType.APPLICATION_JSON)

@@ -1,4 +1,4 @@
-package com.ivan.penitenciaria.api;
+package model;
 
 import jakarta.persistence.*;
 import jakarta.xml.bind.annotation.XmlRootElement;

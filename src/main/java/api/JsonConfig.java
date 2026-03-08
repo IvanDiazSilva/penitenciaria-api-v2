@@ -1,4 +1,4 @@
-package com.ivan.penitenciaria.api;
+package api;
 
 import jakarta.ws.rs.ext.ContextResolver;
 import jakarta.ws.rs.ext.Provider;

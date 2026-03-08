@@ -1,5 +1,6 @@
-package com.ivan.penitenciaria.api;
+package model;
 
+import model.Reo;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;

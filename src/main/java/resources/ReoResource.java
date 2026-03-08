@@ -1,5 +1,6 @@
-package com.ivan.penitenciaria.api;
+package resources;
 
+import model.Reo;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

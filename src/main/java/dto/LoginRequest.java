@@ -1,4 +1,4 @@
-package com.ivan.penitenciaria.api;
+package dto;
 
 public class LoginRequest {
 

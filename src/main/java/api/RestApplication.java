@@ -1,4 +1,4 @@
-package com.ivan.penitenciaria.api;
+package api;
 
 import jakarta.ws.rs.ApplicationPath;
 import jakarta.ws.rs.core.Application;

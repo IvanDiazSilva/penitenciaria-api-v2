@@ -1,20 +1,18 @@
-package com.ivan.penitenciaria.api;
+package jwt;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-
 import java.security.Key;
 import java.util.Date;
+import model.Usuario;
 
 public class JwtUtil {
 
-    // Clave secreta simple para el proyecto (en un proyecto real iría en config)
     private static final Key SECRET_KEY = Keys.hmacShaKeyFor(
             "EstaEsUnaClaveSecretaMuyLargaParaJWT_penitenciaria123".getBytes()
     );
 
-    // 30 minutos
     private static final long EXPIRATION_MS = 30 * 60 * 1000;
 
     public static String generarToken(Usuario usuario) {
@@ -49,5 +47,20 @@ public class JwtUtil {
                 .parseClaimsJws(token)
                 .getBody()
                 .getSubject();
+    }
+
+    // ¡FIX: 4 LÍNEAS FALTANTES!
+    public static String getRol(String token) {
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(SECRET_KEY)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .get("rol", String.class);  // ← Extrae claim "rol" del JWT
+        } catch (Exception e) {
+            System.err.println("Error getRol: " + e.getMessage());
+            return null;
+        }
     }
 }
