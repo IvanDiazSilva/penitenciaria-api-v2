@@ -9,6 +9,7 @@ import java.util.Set;
 import jakarta.ws.rs.ApplicationPath;
 import jakarta.ws.rs.core.Application;
 import resources.IncidenteResource;
+import resources.VisitanteResource;
 
 @ApplicationPath("/api")
 public class ApplicationConfig extends Application {
@@ -21,6 +22,7 @@ public class ApplicationConfig extends Application {
         classes.add(JwtFilter.class);  // ← ¡LO QUE FALTABA!
         classes.add(VisitaResource.class);
         classes.add(IncidenteResource.class);
+        classes.add(VisitanteResource.class);
         return classes;
     }
 }
