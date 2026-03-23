@@ -4,8 +4,10 @@ import model.Reo;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
@@ -15,7 +17,7 @@ import java.util.List;
 @Consumes(MediaType.APPLICATION_JSON)
 @RequestScoped
 public class ReoResource {
-    
+
     @PersistenceContext(unitName = "PenitenciariaPU")
     private EntityManager em;
 
@@ -43,7 +45,9 @@ public class ReoResource {
     @Transactional
     public Response actualizarReo(@PathParam("id") Long id, Reo reoUpdate) {
         Reo reo = em.find(Reo.class, id);
-        if (reo == null) return Response.status(404).build();
+        if (reo == null) {
+            return Response.status(404).build();
+        }
         reo.setNombre(reoUpdate.getNombre());
         reo.setDni(reoUpdate.getDni());
         reo.setDelito(reoUpdate.getDelito());
@@ -54,10 +58,23 @@ public class ReoResource {
     @DELETE
     @Path("/{id}")
     @Transactional
-    public Response eliminarReo(@PathParam("id") Long id) {
+    public Response eliminarReo(@PathParam("id") Long id,
+            @Context HttpServletRequest req) {  // ← AÑADE ESTO
+        if (!autorizadoReos(req)) {
+            return Response.status(403).build();  // ← AÑADE ESTO
+        }
         Reo reo = em.find(Reo.class, id);
-        if (reo == null) return Response.status(404).build();
+        if (reo == null) {
+            return Response.status(404).build();
+        }
         em.remove(reo);
         return Response.ok().build();
     }
+
+// Y AÑADE este método (1 vez)
+    private boolean autorizadoReos(@Context HttpServletRequest req) {
+        String rol = (String) req.getAttribute("rol");
+        return rol != null && rol.equalsIgnoreCase("ADMIN");
+    }
+
 }

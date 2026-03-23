@@ -9,6 +9,7 @@ import java.util.Set;
 import jakarta.ws.rs.ApplicationPath;
 import jakarta.ws.rs.core.Application;
 import resources.IncidenteResource;
+import resources.MonitorResource;
 import resources.VisitanteResource;
 
 @ApplicationPath("/api")
@@ -23,6 +24,7 @@ public class ApplicationConfig extends Application {
         classes.add(VisitaResource.class);
         classes.add(IncidenteResource.class);
         classes.add(VisitanteResource.class);
+        classes.add(MonitorResource.class);
         return classes;
     }
 }

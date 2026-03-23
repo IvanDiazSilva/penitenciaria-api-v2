@@ -36,6 +36,9 @@ public class Visita {
     @Column(name = "autorizado")
     private Boolean autorizado = true;
 
+    @Column(name = "codigo_qr", length = 100)
+    private String codigoQr;
+
     // Constructores
     public Visita() {
     }
@@ -104,5 +107,16 @@ public class Visita {
     public void setAutorizado(Boolean autorizado) {
         this.autorizado = autorizado;
     }
+
+    public String getCodigoQr() {
+        return codigoQr;
+    }
+
+    public void setCodigoQr(String codigoQr) {
+        this.codigoQr = codigoQr;
+    }
     
+    
+    
+
 }
