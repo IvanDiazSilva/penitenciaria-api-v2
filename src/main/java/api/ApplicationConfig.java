@@ -1,5 +1,6 @@
 package api;
 
+import cors.CorsFilter;
 import resources.VisitaResource;
 import resources.LoginResource;
 import resources.ReoResource;
@@ -25,6 +26,7 @@ public class ApplicationConfig extends Application {
         classes.add(IncidenteResource.class);
         classes.add(VisitanteResource.class);
         classes.add(MonitorResource.class);
+        classes.add(CorsFilter.class);
         
         return classes;
     }
