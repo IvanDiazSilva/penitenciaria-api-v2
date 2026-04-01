@@ -21,7 +21,12 @@ public class JwtFilter implements ContainerRequestFilter {
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         String path = requestContext.getUriInfo().getPath();
-        System.out.println("PATH = " + path);
+        String method = requestContext.getMethod();
+
+        // ← AÑADIR ESTO: saltar OPTIONS preflight
+        if ("OPTIONS".equals(method)) {
+            return;
+        }
 
         if (path.equals("/login")) {
             return;  // Login libre
