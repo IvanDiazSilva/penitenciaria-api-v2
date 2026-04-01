@@ -25,6 +25,7 @@ public class ApplicationConfig extends Application {
         classes.add(IncidenteResource.class);
         classes.add(VisitanteResource.class);
         classes.add(MonitorResource.class);
+        
         return classes;
     }
 }

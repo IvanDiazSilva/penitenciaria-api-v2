@@ -1,6 +1,6 @@
-package resources;  // ← TU PACKAGE (no rest)
+package resources;
 
-import model.Visitante;  // ← TU PACKAGE model (como VisitaResource)
+import model.Visitante;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -8,6 +8,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 @Path("/visitantes")
@@ -17,32 +18,103 @@ public class VisitanteResource {
 
     private static final Logger LOG = Logger.getLogger(VisitanteResource.class.getName());
 
-    @PersistenceContext(unitName = "PenitenciariaPU")  // ← EXACTO como VisitaResource
+    @PersistenceContext(unitName = "PenitenciariaPU")
     private EntityManager em;
 
     @POST
     @Transactional
     public Response create(Visitante visitante) {
-        LOG.info("POST /api/visitantes: " + visitante);
         try {
+            if (visitante == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", "No se han recibido datos del visitante"))
+                        .build();
+            }
+
+            if (visitante.getNombreCompleto() == null || visitante.getNombreCompleto().trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", "El nombre completo es obligatorio"))
+                        .build();
+            }
+
+            if (visitante.getDniNie() == null || visitante.getDniNie().trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", "El DNI/NIE es obligatorio"))
+                        .build();
+            }
+
+            visitante.setNombreCompleto(visitante.getNombreCompleto().trim());
+            visitante.setDniNie(visitante.getDniNie().trim().toUpperCase());
+
+            if (visitante.getNacionalidad() != null) {
+                visitante.setNacionalidad(visitante.getNacionalidad().trim());
+            }
+
+            if (visitante.getTelefono() != null) {
+                visitante.setTelefono(visitante.getTelefono().trim());
+            }
+
+            if (visitante.getEmail() != null) {
+                visitante.setEmail(visitante.getEmail().trim());
+            }
+
+            if (visitante.getDireccion() != null) {
+                visitante.setDireccion(visitante.getDireccion().trim());
+            }
+
+            if (visitante.getNombreInterno() != null) {
+                visitante.setNombreInterno(visitante.getNombreInterno().trim());
+            }
+
+            if (visitante.getParentesco() != null) {
+                visitante.setParentesco(visitante.getParentesco().trim());
+            }
+
+            if (visitante.getEstado() == null || visitante.getEstado().trim().isEmpty()) {
+                visitante.setEstado("PENDIENTE");
+            } else {
+                visitante.setEstado(visitante.getEstado().trim().toUpperCase());
+            }
+
+            Long existentes = em.createQuery(
+                    "SELECT COUNT(v) FROM Visitante v WHERE UPPER(v.dniNie) = :dniNie",
+                    Long.class
+            ).setParameter("dniNie", visitante.getDniNie())
+             .getSingleResult();
+
+            if (existentes > 0) {
+                return Response.status(Response.Status.CONFLICT)
+                        .entity(Map.of("error", "Ya existe un visitante con ese DNI/NIE"))
+                        .build();
+            }
+
             em.persist(visitante);
             em.flush();
-            return Response.status(Response.Status.CREATED).entity(visitante).build();
+            em.refresh(visitante);
+
+            LOG.info("Visitante creado con id=" + visitante.getId() + ", dniNie=" + visitante.getDniNie());
+
+            return Response.status(Response.Status.CREATED)
+                    .entity(visitante)
+                    .build();
+
         } catch (Exception e) {
-            LOG.severe("Error POST visitante: " + e.getMessage());
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Error crear: " + e.getMessage()).build();
+            LOG.severe("Error POST visitante: " + e.getClass().getName() + " - " + e.getMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(Map.of("error", "Error interno al crear el visitante"))
+                    .build();
         }
     }
 
     @GET
     public Response getAll() {
         List<Visitante> visitantes = em.createQuery(
-                "SELECT v FROM Visitante v ORDER BY v.apellidos, v.nombre",
+                "SELECT v FROM Visitante v ORDER BY v.fechaCreacion DESC",
                 Visitante.class
         ).getResultList();
-        LOG.info("GET /api/visitantes: " + visitantes.size() + " visitantes");
+
+        LOG.info("GET /visitantes -> " + visitantes.size() + " visitantes");
+
         return Response.ok(visitantes).build();
     }
-
 }
