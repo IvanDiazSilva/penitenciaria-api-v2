@@ -16,10 +16,10 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./login.css']
 })
 export class LoginComponent {
-  // Vinculados a los inputs mediante [(ngModel)]
+  // Datos vinculados al formulario HTML mediante [(ngModel)]
   usuario: string = '';
   password: string = '';
-  //rolSeleccionado: string = 'Visitante'; // Valor inicial del selector
+  rolSeleccionado: string = 'Visitante'; // Valor por defecto del selector
 
   constructor(
     private authService: AuthService, 
@@ -27,56 +27,60 @@ export class LoginComponent {
   ) {}
 
   /**
-   * Ejecuta la lógica de autenticación al enviar el formulario.
+   * Ejecuta la lógica de autenticación.
+   * IMPORTANTE: Enviamos solo username y password para evitar el Error 400 del servidor.
    */
   onLogin() {
-    /**
-     * AJUSTE CLAVE: Iván añadió 'role' en su LoginRequest (DTO).
-     * Si no enviamos el campo, el servidor podría dar error 400 o 500
-     * al intentar mapear el JSON.
-     */
+    // Creamos el objeto JSON que espera la API de Java (Iván)
     const datosLogin = {
       username: this.usuario,
-      password: this.password,
-      rol: this.rolSeleccionado // Descomentado para coincidir con el DTO de Java
+      password: this.password
     };
 
-    console.log("🚀 Enviando credenciales:", datosLogin);
+    console.log("🚀 Enviando credenciales al servidor:", datosLogin);
 
     this.authService.login(datosLogin).subscribe({
       next: (res: any) => {
         /**
-         * Verificamos que la respuesta contenga el token.
-         * Nota: Si Iván devuelve el token dentro de un objeto, 
-         * asegúrate de que el nombre de la propiedad sea 'token'.
+         * Si el servidor responde 200 OK y nos entrega un Token:
          */
         if (res && res.token) {
-          // Guardamos los datos de sesión localmente
+          // 1. Guardamos los datos de sesión en el navegador
           localStorage.setItem('token', res.token);
           localStorage.setItem('role', this.rolSeleccionado);
           
-          console.log('✅ Acceso garantizado como:', this.rolSeleccionado);
+          console.log('✅ Login exitoso. Rol activo:', this.rolSeleccionado);
           
-          // Navegación a la página principal de la aplicación
-          this.router.navigate(['/listado']); 
+          // 2. EL SEMÁFORO DE RUTAS (Lógica de redirección por Rol):
+          if (this.rolSeleccionado === 'Visitante') {
+            // Si el usuario eligió ser Visitante, va directo al portal de visitas
+            console.log('➡️ Redirigiendo al Portal de Visitas...');
+            this.router.navigate(['/portal-visitante']); 
+          } else {
+            // Si es Admin o Guardia, va al listado general de internos
+            console.log('➡️ Redirigiendo al Listado de Internos...');
+            this.router.navigate(['/listado']);
+          }
+
         } else {
-          // Caso en que el servidor responde 200 pero sin contenido útil
-          alert('Error inesperado: El servidor no devolvió una llave de acceso.');
+          // Caso en que el servidor responde pero el JSON no trae el campo 'token'
+          alert('Error de seguridad: El servidor no ha generado una llave de acceso.');
         }
       },
       error: (err) => {
         /**
-         * Si ves el error de CORS aquí, es que el navegador bloqueó la respuesta
-         * antes de que Angular pudiera leerla.
+         * Manejo de errores de red o credenciales:
          */
         console.error("❌ Error en la petición:", err);
         
-        if (err.status === 0) {
-          alert('Error de conexión: El servidor no responde o hay un bloqueo de CORS.');
+        if (err.status === 400) {
+          alert('Error 400: El formato de los datos es incorrecto para el servidor.');
+        } else if (err.status === 401) {
+          alert('Acceso denegado: Usuario o contraseña incorrectos.');
         } else {
-          alert('Credenciales incorrectas para el rol seleccionado.');
+          alert('No se pudo establecer conexión con el servidor de la penitenciaría.');
         }
       }
-    });
-  }
-}
+    }); // Fin del subscribe
+  } // Fin del método onLogin
+} // Fin de la clase

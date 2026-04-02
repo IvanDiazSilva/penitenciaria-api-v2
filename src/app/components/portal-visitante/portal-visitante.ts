@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common'; // Necesario para directivas como *ngIf, *ngSwitch y [ngClass]
-import { FormsModule } from '@angular/forms';   // Necesario para capturar datos con [(ngModel)]
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router'; // Importación vital
 
 @Component({
   selector: 'app-portal-visitante',
@@ -11,20 +12,9 @@ import { FormsModule } from '@angular/forms';   // Necesario para capturar datos
 })
 export class PortalVisitanteComponent {
 
-  /** * pasoActual: Controla la vista principal (Pantalla de Inicio, Formulario o Espera).
-   * Valores posibles: 'INICIO', 'REGISTRO', 'ESPERA'.
-   */
   pasoActual: string = 'INICIO'; 
-
-  /** * subPasoRegistro: Controla en qué sección del formulario está el usuario.
-   * Útil para dividir un formulario largo en partes más pequeñas (Wizard).
-   */
   subPasoRegistro: number = 1;
 
-  /**
-   * datosVisitante: Objeto que agrupa toda la información que el usuario rellena.
-   * Se inicializa con valores por defecto para evitar errores de 'undefined' en el HTML.
-   */
   datosVisitante = {
     nombre: '',
     dni: '',
@@ -40,10 +30,17 @@ export class PortalVisitanteComponent {
     aceptaTerminos: false
   };
 
+  constructor(private router: Router) {}
+
   /**
-   * Lógica para avanzar en el formulario.
-   * Si no ha llegado al final (paso 3), avanza; si ya terminó, envía la solicitud.
+   * ESTA FUNCIÓN ES LA QUE SOLUCIONA TU PROBLEMA:
+   * En lugar de cambiar una variable interna, cambia la URL del navegador.
    */
+  irAAltaVisita() {
+    console.log("🚀 Navegando hacia el formulario de alta de visita...");
+    this.router.navigate(['/alta-visita']);
+  }
+
   siguienteSubPaso() {
     if (this.subPasoRegistro < 3) {
       this.subPasoRegistro++;
@@ -52,10 +49,6 @@ export class PortalVisitanteComponent {
     }
   }
 
-  /**
-   * Lógica para retroceder.
-   * Si está en el primer paso del formulario, vuelve a la pantalla de 'INICIO'.
-   */
   anteriorSubPaso() {
     if (this.subPasoRegistro > 1) {
       this.subPasoRegistro--;
@@ -64,23 +57,12 @@ export class PortalVisitanteComponent {
     }
   }
 
-  /**
-   * Cambia la vista principal del portal.
-   * Resetea el contador de subpasos al cambiar de pantalla.
-   * @param vista El nombre de la vista a la que queremos ir.
-   */
   forzarVista(vista: string) {
     this.pasoActual = vista;
     this.subPasoRegistro = 1;
   }
 
-  /**
-   * Simulación de envío de datos.
-   * Aquí iría la llamada al servicio HTTP. Tras "enviar",
-   * movemos al usuario a una pantalla de espera o confirmación.
-   */
   enviarSolicitud() {
-    // Aquí podrías añadir: this.miServicio.post(this.datosVisitante).subscribe(...)
     this.forzarVista('ESPERA');
   }
 }

@@ -1,44 +1,52 @@
 <div class="login-container">
-  
   <div class="login-card animate-in">
-    
-    <div class="logo-shield-container">
-      <span class="logo-shield">📝</span>
-    </div>
-    
-    <h2>Nueva Visita</h2>
-    <p class="subtitle">CASO DE USO CU-E05: REGISTRO OFICIAL</p>
-    <hr style="border: 0; border-top: 1px solid #edf2f7; margin-bottom: 15px;">
+    <div class="logo-shield-container"><span class="logo-shield">📝</span></div>
+    <h2>Registro de Visita</h2>
+    <p class="subtitle">CONTROL PENITENCIARIO - CU-E05</p>
+    <hr style="border: 0; border-top: 1px solid #edf2f7; margin-bottom: 10px;">
 
     <form (ngSubmit)="guardarVisita()">
-      
       <div class="input-group">
         <label>Nombre del Visitante</label>
-        <input type="text" [(ngModel)]="nuevaVisita.visitanteNombre" name="nombre" placeholder="Nombre completo">
+        <input type="text" [(ngModel)]="nuevaVisita.visitanteNombre" name="vNombre" required>
       </div>
 
       <div class="input-group">
         <label>DNI / Documento</label>
-        <input type="text" [(ngModel)]="nuevaVisita.visitanteDni" name="dni" placeholder="Número de identificación">
+        <input type="text" [(ngModel)]="nuevaVisita.visitanteDni" name="vDni">
       </div>
 
-      <div class="input-group">
-        <label>Fecha de la Visita</label>
-        <input type="date" [(ngModel)]="nuevaVisita.fechaVisita" name="fecha">
+      <div class="row-inputs">
+        <div class="input-group flex-2">
+          <label>Fecha</label>
+          <input type="date" [(ngModel)]="nuevaVisita.fechaVisita" name="fVis" required>
+        </div>
+        <div class="input-group flex-1">
+          <label>ID Reo</label>
+          <input type="number" [(ngModel)]="nuevaVisita.idReo" name="rId" required>
+        </div>
       </div>
 
-      <div class="input-group">
-        <label>ID del Reo</label>
-        <input type="number" [(ngModel)]="nuevaVisita.idReo" name="reo" placeholder="ID del interno">
+      <div class="row-inputs">
+        <div class="input-group">
+          <label>Hora Entrada</label>
+          <input type="time" [(ngModel)]="nuevaVisita.horaEntrada" name="hEnt" required>
+        </div>
+        <div class="input-group">
+          <label>Hora Salida</label>
+          <input type="time" [(ngModel)]="nuevaVisita.horaSalida" name="hSal" required>
+        </div>
       </div>
 
-      <div class="check-group" style="margin-bottom: 15px;">
+      <div class="check-group">
         <input type="checkbox" [(ngModel)]="nuevaVisita.autorizado" name="auth" id="authCheck">
-        <label for="authCheck">¿Cuenta con autorización oficial?</label>
+        <label for="authCheck">Autorización confirmada</label>
       </div>
 
-      <button type="submit" class="btn-primary">REGISTRAR VISITA</button>
-      
+      <button type="submit" class="btn-primary">GUARDAR EN SISTEMA</button>
+      <button type="button" class="btn-secondary" (click)="volverAlPortal()" style="margin-top: 10px; width: 100%; background: #edf2f7; color: #4a5568; border: none; padding: 10px; border-radius: 10px; cursor: pointer; font-weight: 600;">
+  VOLVER AL PORTAL
+</button>
     </form>
   </div>
 </div>
