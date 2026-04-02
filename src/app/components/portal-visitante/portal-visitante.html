@@ -1,0 +1,118 @@
+<div class="login-container">
+  <div class="login-card">
+    
+    <div class="logo-shield-container">
+      <i class="fas fa-shield-alt logo-shield"></i>
+    </div>
+    <h2>Portal del visitante</h2>
+    <p class="subtitle">Gestión de accesos y citas</p>
+
+    <div [ngSwitch]="pasoActual">
+
+      <div *ngSwitchCase="'INICIO'" class="animate-in">
+        <span class="label-roles">Seleccione el trámite</span>
+        <div class="options-grid">
+          <div class="option-card" (click)="forzarVista('REGISTRO')">
+            <i class="fas fa-user-plus"></i>
+            <div class="text-group">
+              <span class="title">Nuevo registro</span>
+              <span class="desc">Si es tu primera vez, solicita acceso aquí.</span>
+            </div>
+          </div>
+          <div class="option-card" (click)="forzarVista('ESPERA')">
+            <i class="fas fa-search"></i>
+            <div class="text-group">
+              <span class="title">Consultar estado</span>
+              <span class="desc">Verifica la aprobación de tu acceso.</span>
+            </div>
+          </div>
+          <div class="option-card" (click)="forzarVista('CITA')">
+            <i class="fas fa-calendar-alt"></i>
+            <div class="text-group">
+              <span class="title">Solicitar cita</span>
+              <span class="desc">Agenda tu visita al centro.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngSwitchCase="'REGISTRO'" class="animate-in">
+        
+        <div [ngSwitch]="subPasoRegistro">
+          
+          <div *ngSwitchCase="1" class="animate-in">
+            <span class="label-roles">PASO 1: IDENTIFICACIÓN LEGAL</span>
+            <div class="input-group">
+              <label>Nombre completo</label>
+              <input type="text" [(ngModel)]="datosVisitante.nombre" placeholder="Nombre y apellidos">
+            </div>
+            <div class="input-group">
+              <label>Documento (DNI/NIE)</label>
+              <input type="text" [(ngModel)]="datosVisitante.dni" placeholder="12345678X">
+            </div>
+            <div class="input-group">
+              <label>Nacionalidad</label>
+              <input type="text" [(ngModel)]="datosVisitante.nacionalidad" placeholder="Ej: Española">
+            </div>
+          </div>
+
+          <div *ngSwitchCase="2" class="animate-in">
+            <span class="label-roles">PASO 2: CONTACTO Y RESIDENCIA</span>
+            <div class="input-group">
+              <label>TELÉFONO MÓVIL</label>
+              <input type="tel" [(ngModel)]="datosVisitante.telefono" placeholder="600 000 000">
+            </div>
+            <div class="input-group">
+              <label>CORREO ELECTRÓNICO</label>
+              <input type="email" [(ngModel)]="datosVisitante.email" placeholder="E-MAIL DE CONTACTO">
+            </div>
+            <div class="input-group">
+              <label>DIRECCIÓN POSTAL</label>
+              <input type="text" [(ngModel)]="datosVisitante.direccion" placeholder="CALLE, NÚMERO, CIUDAD">
+            </div>
+          </div>
+
+          <div *ngSwitchCase="3" class="animate-in">
+            <span class="label-roles">PASO 3: DETALLES DE LA VISITA</span>
+            <div class="input-group">
+              <label>INTERNO A VISITAR</label>
+              <input type="text" [(ngModel)]="datosVisitante.nombreInterno" placeholder="NOMBRE O ID">
+            </div>
+            <div class="input-group">
+              <label>PARENTESCO / RELACIÓN</label>
+              <input type="text" [(ngModel)]="datosVisitante.parentesco" placeholder="EJ: FAMILIAR, ABOGADO, AMIGO">
+            </div>
+            <div class="check-group mt-3">
+              <input type="checkbox" [(ngModel)]="datosVisitante.aceptaTerminos" id="checkTerms">
+              <label for="checkTerms">DECLARO CONOCER LA NORMATIVA DE SEGURIDAD DEL CENTRO</label>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-primary mt-4" 
+                [disabled]="subPasoRegistro === 3 && !datosVisitante.aceptaTerminos"
+                (click)="siguienteSubPaso()">
+          {{ subPasoRegistro === 3 ? 'FINALIZAR REGISTRO' : 'SIGUIENTE PASO →' }}
+        </button>
+        <button class="btn-secondary mt-1" (click)="anteriorSubPaso()">
+          {{ subPasoRegistro === 1 ? 'VOLVER AL INICIO' : '← ATRÁS' }}
+        </button>
+      </div>
+
+      <div *ngSwitchCase="'ESPERA'" class="text-center animate-in">
+        <div class="status-icon pending"><i class="fas fa-clock"></i></div>
+        <span class="label-roles">ESTADO DE SOLICITUD</span>
+        <p class="info-text">Su documentación está siendo validada por seguridad.</p>
+        <button class="btn-primary" (click)="forzarVista('INICIO')">VOLVER</button>
+      </div>
+
+      <div *ngSwitchCase="'CITA'" class="text-center animate-in">
+        <div class="status-icon success"><i class="fas fa-calendar-check"></i></div>
+        <span class="label-roles">SOLICITAR CITA</span>
+        <p class="info-text">Agenda tu visita al centro penitenciario.</p>
+        <button class="btn-primary" (click)="forzarVista('INICIO')">VOLVER</button>
+      </div>
+
+    </div>
+  </div>
+</div>

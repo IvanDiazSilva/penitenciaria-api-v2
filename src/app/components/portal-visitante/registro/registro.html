@@ -1,0 +1,55 @@
+<div class="registro-container">
+  <div class="stepper-header">
+    <span class="step-indicator">PASO {{subPaso}} DE 3</span>
+    <div class="progress-bar">
+      <div class="progress-fill" [style.width.%]="(subPaso / 3) * 100"></div>
+    </div>
+  </div>
+
+  <div [ngSwitch]="subPaso">
+    <div *ngSwitchCase="1" class="step-content animate-in">
+      <span class="label-roles">DATOS DE IDENTIDAD</span>
+      <div class="input-group">
+        <label>ombre completo</label>
+        <input type="text" [(ngModel)]="datos.nombre" placeholder="APELLIDOS Y NOMBRE">
+      </div>
+      <div class="input-group">
+        <label>Documento (DNI/NIE)</label>
+        <input type="text" [(ngModel)]="datos.dni" placeholder="12345678X">
+      </div>
+    </div>
+
+    <div *ngSwitchCase="2" class="step-content animate-in">
+      <span class="label-roles">Datos de contacto</span>
+      <div class="input-group">
+        <label>TELÉFONO MÓVIL</label>
+        <input type="tel" [(ngModel)]="datos.telefono" placeholder="600 000 000">
+      </div>
+      <div class="input-group">
+        <label>E-MAIL</label>
+        <input type="email" [(ngModel)]="datos.email" placeholder="CORREO ELECTRÓNICO">
+      </div>
+    </div>
+
+    <div *ngSwitchCase="3" class="step-content animate-in">
+      <span class="label-roles">DETALLES DE LA VISITA</span>
+      <div class="input-group">
+        <label>INTERNO A VISITAR</label>
+        <input type="text" [(ngModel)]="datos.interno" placeholder="NOMBRE O ID">
+      </div>
+      <div class="check-group">
+        <input type="checkbox" [(ngModel)]="datos.acepta">
+        <label>ACEPTO LA NORMATIVA DE SEGURIDAD</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="registro-actions">
+    <button class="btn-primary" (click)="siguiente()">
+      {{ subPaso === 3 ? 'FINALIZAR' : 'CONTINUAR' }}
+    </button>
+    <button class="btn-secondary" (click)="atras()">
+      {{ subPaso === 1 ? 'CANCELAR' : 'VOLVER' }}
+    </button>
+  </div>
+</div>

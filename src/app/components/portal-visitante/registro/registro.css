@@ -1,0 +1,77 @@
+/* =========================================
+   CONTENEDOR DEL REGISTRO
+   Asegura que el contenido se distribuya verticalmente
+   ========================================= */
+.registro-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Ocupa todo el alto disponible de la tarjeta (.login-card) */
+}
+
+/* =========================================
+   CABECERA DEL PASO ACTUAL (STEPPER)
+   ========================================= */
+.stepper-header { 
+  margin-bottom: 20px; 
+  text-align: center; 
+}
+
+/* Indicador de texto (Ej: "PASO 1 DE 3") */
+.step-indicator {
+  font-size: 0.65rem;
+  font-weight: 800;           /* Fuente muy gruesa para resaltar */
+  color: #a0aec0;             /* Gris claro sutil */
+  letter-spacing: 1px;        /* Espaciado entre letras para estilo moderno */
+  text-transform: uppercase;
+}
+
+/* =========================================
+   BARRA DE PROGRESO VISUAL
+   ========================================= */
+/* El fondo gris de la barra (el camino total) */
+.progress-bar {
+  height: 4px;
+  background: #edf2f7;
+  border-radius: 10px;
+  margin-top: 5px;
+}
+
+/* El relleno negro que indica cuánto se ha completado */
+.progress-fill {
+  height: 100%;
+  background: #0d1117;        /* Color negro acorde al botón primario */
+  border-radius: 10px;
+  /* Animación suave: cuando cambie el % de ancho (width), se deslizará */
+  transition: width 0.4s ease; 
+}
+
+/* =========================================
+   GRUPO DE CHECKBOX (TÉRMINOS Y CONDICIONES)
+   ========================================= */
+.check-group {
+  display: flex;
+  align-items: center;        /* Alinea el cuadrito del checkbox con el texto */
+  gap: 10px;                  /* Espacio entre el input y el label */
+  margin-top: 10px;
+  text-align: left;           /* Asegura que el texto legal se lea desde la izquierda */
+}
+
+.check-group label {
+  font-size: 0.6rem;          /* Fuente pequeña para textos legales */
+  font-weight: 700;
+  color: #718096;
+  line-height: 1.2;           /* Espacio entre líneas para que no se amontone */
+}
+
+/* =========================================
+   ACCIONES DEL REGISTRO (BOTONES)
+   ========================================= */
+.registro-actions {
+  /* MAGIA DE FLEXBOX:
+     'margin-top: auto' empuja este bloque al final del contenedor,
+     haciendo que los botones siempre estén pegados abajo aunque el 
+     formulario tenga pocos campos.
+  */
+  margin-top: auto; 
+  padding-top: 15px;
+}

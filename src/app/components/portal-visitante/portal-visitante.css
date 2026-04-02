@@ -1,0 +1,183 @@
+/* =========================================
+   CONTENEDOR PRINCIPAL
+   Ocupa toda la pantalla y centra el contenido
+   ========================================= */
+.login-container {
+  /* Fondo con degradado circular: del gris oscuro al negro casi total */
+  background: radial-gradient(circle, #1a202c 0%, #0d1117 100%);
+  min-height: 100vh;           /* Altura mínima del 100% de la ventana */
+  width: 100vw;                /* Ancho total de la ventana */
+  display: flex;               /* Flexbox para centrado */
+  justify-content: center;     /* Centrado horizontal */
+  align-items: center;         /* Centrado vertical */
+  font-family: 'Inter', sans-serif; /* Tipografía moderna y legible */
+  padding: 20px;
+}
+
+/* =========================================
+   TARJETA LOGIN / PORTAL
+   El recuadro blanco central con altura fija
+   ========================================= */
+.login-card {
+  background: #fff;            /* Fondo blanco puro */
+  width: 100%;
+  max-width: 420px;            /* No crece más de 420px */
+  height: 520px;               /* Altura fija para mantener consistencia visual */
+  padding: 20px 25px;
+  border-radius: 20px;         /* Esquinas muy redondeadas (estilo moderno) */
+  display: flex;
+  flex-direction: column;      /* Elementos uno debajo de otro */
+  justify-content: flex-start; /* Alinea contenido al principio (arriba) */
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5); /* Sombra muy marcada para dar profundidad */
+  overflow: hidden;            /* Corta cualquier contenido que sobresalga */
+}
+
+/* =========================================
+   LOGO Y CABECERA
+   ========================================= */
+.logo-shield-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.logo-shield { 
+  font-size: 2.5rem; 
+  color: #0d1117; 
+}
+
+h2 { 
+  font-size: 1.4rem; 
+  font-weight: 800;            /* Texto extra negrita */
+  text-align: center; 
+  margin: 0 0 2px; 
+}
+
+.subtitle { 
+  font-size: 0.75rem; 
+  color: #718096;              /* Gris suave para texto secundario */
+  text-align: center; 
+  margin-bottom: 12px; 
+}
+
+/* =========================================
+   INPUTS (CAMPOS DE TEXTO)
+   ========================================= */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+.input-group label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 4px;
+  text-transform: uppercase;   /* Etiquetas en mayúsculas pequeñas */
+  text-align: left;
+}
+
+.input-group input {
+  padding: 10px;
+  border-radius: 10px;         /* Bordes suavizados */
+  border: 2px solid #edf2f7;   /* Borde gris muy claro */
+  font-size: 0.9rem;
+  background: #f7fafc;         /* Fondo ligeramente grisáceo */
+  transition: all 0.2s;        /* Transición suave para el foco */
+}
+
+/* Estado cuando el usuario hace clic para escribir */
+.input-group input:focus {
+  border-color: #0d1117;       /* El borde se vuelve negro */
+  outline: none;               /* Quita el borde azul por defecto del navegador */
+  background: #fff;            /* Fondo blanco puro al escribir */
+  box-shadow: 0 0 6px rgba(13,17,23,0.15); /* Brillo sutil */
+}
+
+/* =========================================
+   OPCIONES DEL PORTAL (GRID/CARDS)
+   Se usa para seleccionar el tipo de acceso
+   ========================================= */
+.options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;                   /* Espacio amplio entre opciones */
+  align-items: stretch;
+}
+
+.option-card {
+  padding: 20px;
+  border-radius: 16px; 
+  border: 2px solid #edf2f7;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  flex-direction: row;         /* Icono a la izquierda, texto a la derecha */
+  align-items: center;
+  gap: 15px;
+  transition: all 0.2s;
+}
+
+/* Efecto al pasar el ratón por una opción */
+.option-card:hover { 
+  background: #f1f5f9; 
+  border-color: #0d1117; 
+}
+
+.option-card i { font-size: 1.6rem; color: #4a5568; flex-shrink: 0; }
+.option-card .title { font-weight: 600; font-size: 1.05rem; color: #4a5568; }
+.option-card .desc { font-weight: 400; font-size: 0.75rem; color: #718096; line-height: 1.3; }
+
+/* =========================================
+   BOTONES
+   ========================================= */
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  font-weight: 700;
+  border-radius: 10px;
+  background: #0d1117;         /* Botón negro sólido */
+  color: #fff;
+  margin-top: 15px;
+  cursor: pointer;
+  border: none;
+  font-size: 1rem;
+}
+
+.btn-primary:hover { background: #1e293b; } /* Gris oscuro al pasar el ratón */
+
+.btn-secondary {
+  width: 100%;
+  padding: 12px;
+  background: none;            /* Botón transparente */
+  color: #64748b;
+  border: none;
+  cursor: pointer;
+}
+
+/* =========================================
+   ESTADOS (ÉXITO / ESPERA)
+   ========================================= */
+.status-icon { font-size: 3rem; margin-bottom: 8px; text-align: center; }
+.status-icon.pending { color: #f59e0b; } /* Naranja/Ambar para espera */
+.status-icon.success { color: #10b981; } /* Verde para éxito */
+
+/* =========================================
+   ANIMACIONES
+   ========================================= */
+.animate-in { 
+  animation: fadeInUp 0.4s ease-out; 
+}
+
+/* Animación: El elemento aparece desde abajo con opacidad */
+@keyframes fadeInUp { 
+  from { 
+    opacity: 0; 
+    transform: translateY(10px); 
+  } 
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  } 
+}

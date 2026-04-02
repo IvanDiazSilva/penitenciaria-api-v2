@@ -1,0 +1,44 @@
+<div class="login-container">
+  
+  <div class="login-card animate-in">
+    
+    <div class="logo-shield-container">
+      <span class="logo-shield">📝</span>
+    </div>
+    
+    <h2>Nueva Visita</h2>
+    <p class="subtitle">CASO DE USO CU-E05: REGISTRO OFICIAL</p>
+    <hr style="border: 0; border-top: 1px solid #edf2f7; margin-bottom: 15px;">
+
+    <form (ngSubmit)="guardarVisita()">
+      
+      <div class="input-group">
+        <label>Nombre del Visitante</label>
+        <input type="text" [(ngModel)]="nuevaVisita.visitanteNombre" name="nombre" placeholder="Nombre completo">
+      </div>
+
+      <div class="input-group">
+        <label>DNI / Documento</label>
+        <input type="text" [(ngModel)]="nuevaVisita.visitanteDni" name="dni" placeholder="Número de identificación">
+      </div>
+
+      <div class="input-group">
+        <label>Fecha de la Visita</label>
+        <input type="date" [(ngModel)]="nuevaVisita.fechaVisita" name="fecha">
+      </div>
+
+      <div class="input-group">
+        <label>ID del Reo</label>
+        <input type="number" [(ngModel)]="nuevaVisita.idReo" name="reo" placeholder="ID del interno">
+      </div>
+
+      <div class="check-group" style="margin-bottom: 15px;">
+        <input type="checkbox" [(ngModel)]="nuevaVisita.autorizado" name="auth" id="authCheck">
+        <label for="authCheck">¿Cuenta con autorización oficial?</label>
+      </div>
+
+      <button type="submit" class="btn-primary">REGISTRAR VISITA</button>
+      
+    </form>
+  </div>
+</div>

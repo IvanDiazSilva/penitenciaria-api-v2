@@ -1,0 +1,50 @@
+<div class="container-listado">
+  <div class="header-acciones">
+    <h2>📋 Registro de Visitas Penitenciarias</h2>
+    <div class="botones">
+      <button routerLink="/alta-visita" class="btn-nuevo">➕ Nueva Visita</button>
+      <button (click)="cerrarSesion()" class="btn-logout">Cerrar Sesión</button>
+    </div>
+  </div>
+
+  <hr>
+
+  <div *ngIf="cargando" class="mensaje-info">
+    <p>Cargando datos del servidor de Iván...</p>
+  </div>
+
+  <table *ngIf="!cargando && visitas.length > 0" class="tabla-visitas">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Visitante</th>
+        <th>DNI Visitante</th>
+        <th>Fecha Visita</th>
+        <th>Reo / Interno</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let v of visitas">
+        <td>{{ v.id }}</td>
+        <td><strong>{{ v.visitanteNombre }}</strong></td>
+        <td>{{ v.visitanteDni }}</td>
+        <td>{{ v.fechaVisita | date:'dd/MM/yyyy' }}</td>
+        <td>
+          <span class="nombre-reo">{{ v.reo?.nombre }}</span>
+          <small class="delito-reo">{{ v.reo?.delito }}</small>
+        </td>
+        <td>
+          <span [class]="v.autorizado ? 'tag-autorizado' : 'tag-denegado'">
+            {{ v.autorizado ? 'Autorizada' : 'Denegada' }}
+          </span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!cargando && visitas.length === 0" class="aviso-vacio">
+    <p>No se han encontrado visitas registradas en el sistema.</p>
+    <button routerLink="/alta-visita" class="btn-nuevo">Registrar la primera visita</button>
+  </div>
+</div>

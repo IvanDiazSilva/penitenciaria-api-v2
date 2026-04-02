@@ -1,0 +1,97 @@
+/* CONTENEDOR PRINCIPAL: Fondo oscuro radial */
+.login-container {
+  background: radial-gradient(circle, #1a202c 0%, #0d1117 100%);
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Inter', sans-serif;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* TARJETA: Altura fija de 520px y max-width de 420px */
+.login-card {
+  background: #fff;
+  width: 100%;
+  max-width: 420px;
+  height: 540px; /* Ajustada ligeramente para que quepan todos los campos */
+  padding: 25px;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* CABECERA */
+.logo-shield-container { text-align: center; margin-bottom: 5px; }
+.logo-shield { font-size: 2.2rem; }
+h2 { font-size: 1.4rem; font-weight: 800; text-align: center; margin: 0; color: #0d1117; }
+.subtitle { font-size: 0.7rem; color: #718096; text-align: center; font-weight: 600; margin-bottom: 10px; }
+
+/* GRUPOS DE INPUT (Estilo moderno) */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+}
+.input-group label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #4a5568;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+.input-group input {
+  padding: 10px;
+  border-radius: 10px;
+  border: 2px solid #edf2f7;
+  font-size: 0.85rem;
+  background: #f7fafc;
+  transition: all 0.2s;
+}
+.input-group input:focus {
+  border-color: #0d1117;
+  outline: none;
+  background: #fff;
+}
+
+/* CHECKBOX */
+.check-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.check-group label {
+  font-size: 0.75rem;
+  color: #4a5568;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* BOTÓN PRIMARIO (Negro sólido) */
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  font-weight: 700;
+  border-radius: 10px;
+  background: #0d1117;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 10px;
+}
+.btn-primary:hover { background: #2d3748; }
+
+/* ANIMACIÓN DE ENTRADA */
+.animate-in {
+  animation: fadeInUp 0.4s ease-out;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
