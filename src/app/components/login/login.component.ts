@@ -19,7 +19,7 @@ export class LoginComponent {
   // Vinculados a los inputs mediante [(ngModel)]
   usuario: string = '';
   password: string = '';
-  rolSeleccionado: string = 'Visitante'; // Valor inicial del selector
+  //rolSeleccionado: string = 'Visitante'; // Valor inicial del selector
 
   constructor(
     private authService: AuthService, 
@@ -38,7 +38,7 @@ export class LoginComponent {
     const datosLogin = {
       username: this.usuario,
       password: this.password,
-      role: this.rolSeleccionado // Descomentado para coincidir con el DTO de Java
+      rol: this.rolSeleccionado // Descomentado para coincidir con el DTO de Java
     };
 
     console.log("🚀 Enviando credenciales:", datosLogin);

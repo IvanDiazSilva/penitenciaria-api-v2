@@ -1,37 +1,31 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './components/login/login.component';
 import { ListadoComponent } from './components/listado/listado.component';
-
-/**
- * 1. IMPORTACIONES DE COMPONENTES
- * Traemos las clases de los componentes para que el Router sepa qué mostrar.
- * Es vital que la ruta del archivo ('./components/...') sea exacta.
- */
 import { AltaVisitaComponent } from './components/alta-visita/alta-visita.component';
 import { PortalVisitanteComponent } from './components/portal-visitante/portal-visitante';
 
-/**
- * Constante 'routes': Array de objetos que define la tabla de rutas.
- * Cada objeto tiene un 'path' (lo que pones en la URL) y un 'component' (lo que se dibuja).
- */
+// Importamos tu nueva clase de Administración (Standalone)
+import { AdminDashboard } from './components/admin-dashboard/admin-dashboard'; 
+
 export const routes: Routes = [
-  // Ruta para la pantalla de acceso del personal
+  // 1. Pantalla de acceso (Solo deja una definición de login)
   { path: 'login', component: LoginComponent },
   
-  // Ruta para ver la tabla con todas las visitas registradas
+  // 2. Ruta para la Administradora (Tu panel de escritorio)
+  { path: 'admin', component: AdminDashboard }, 
+  
+  // 3. Tabla con todas las visitas registradas
   { path: 'listado', component: ListadoComponent },
   
-  // Ruta para el formulario interno de registro de visitas
+  // 4. Formulario interno de registro de visitas
   { path: 'alta-visita', component: AltaVisitaComponent },
   
-  // Ruta para el portal público donde los familiares se pre-registran
+  // 5. Portal público para familiares
   { path: 'portal-visitante', component: PortalVisitanteComponent }, 
   
-  /**
-   * RUTA POR DEFECTO:
-   * Si el usuario entra a la raíz (http://localhost:4200/), 
-   * lo redirigimos automáticamente a la pantalla de login.
-   * 'pathMatch: full' asegura que la ruta esté totalmente vacía para redirigir.
-   */
-  { path: '', redirectTo: '/login', pathMatch: 'full' }
+  // 6. RUTA POR DEFECTO: Redirigir al login si la URL está vacía
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
+
+  // 7. RUTA COMODÍN (Opcional): Si escriben cualquier cosa mal, al login
+  { path: '**', redirectTo: '/login' }
 ];

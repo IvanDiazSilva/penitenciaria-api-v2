@@ -1,0 +1,53 @@
+<div class="admin-layout">
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <img src="assets/logo-penal.png" alt="Escudo" class="logo-min">
+      <span>CONTROL ADMIN</span>
+    </div>
+    
+    <ul class="nav-links">
+      <li class="active"><a href="#"><i class="pi pi-home"></i> Monitorización</a></li>
+      <li><a href="#"><i class="pi pi-users"></i> Gestión Presos</a></li>
+      <li><a href="#"><i class="pi pi-map"></i> Mapa Celdas</a></li>
+      <li><a href="#"><i class="pi pi-bell"></i> Alertas Críticas</a></li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <button (click)="onLogout()" class="btn-exit">Salir del Sistema</button>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <h1>Panel de Monitorización Real</h1>
+      <div class="admin-badge">
+        <span>Estefanía (Administradora)</span>
+        <div class="online-dot"></div>
+      </div>
+    </header>
+
+    <div class="dashboard-grid">
+      <div class="card stat blue"><h3>Total Población</h3><p>1,284</p></div>
+      <div class="card stat yellow"><h3>Visitas Activas</h3><p>12</p></div>
+      <div class="card stat red"><h3>Incidencias</h3><p>0</p></div>
+
+      <section class="monitor-table">
+        <h3>Últimos accesos registrados</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Funcionario</th>
+              <th>Acción</th>
+              <th>Ubicación</th>
+              <th>Hora</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>García, J.</td><td>Apertura Celda</td><td>Módulo B</td><td>10:30</td></tr>
+            <tr><td>López, M.</td><td>Ingreso Visita</td><td>Puerta 1</td><td>10:15</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+</div>
