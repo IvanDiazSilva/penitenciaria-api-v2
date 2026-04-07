@@ -1,5 +1,6 @@
 package resources;
 
+import model.Reo;
 import model.Visita;  // Ajusta tu package model
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -14,6 +15,7 @@ import java.util.logging.Logger;
 import jakarta.inject.Inject;
 import java.util.Base64;
 import java.util.UUID;
+import model.Visitante;
 
 @Path("/visitas")
 @Produces(MediaType.APPLICATION_JSON)
@@ -48,14 +50,73 @@ public class VisitaResource {
     @Transactional
     public Response create(Visita visita) {
         LOG.info("POST /api/visitas: " + visita);
+
         try {
+            if (visita == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("La visita no puede ser nula")
+                        .build();
+            }
+
+            if (visita.getReo() == null || visita.getReo().getId() == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("El reo es obligatorio")
+                        .build();
+            }
+
+            Reo reo = em.find(Reo.class, visita.getReo().getId());
+            if (reo == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("No existe un reo con id: " + visita.getReo().getId())
+                        .build();
+            }
+
+            if (visita.getVisitanteDni() == null || visita.getVisitanteDni().trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("El visitanteDni es obligatorio")
+                        .build();
+            }
+
+            Visitante visitante = em.createQuery(
+                    "SELECT v FROM Visitante v WHERE v.dniNie = :dni", Visitante.class)
+                    .setParameter("dni", visita.getVisitanteDni().trim())
+                    .getResultStream()
+                    .findFirst()
+                    .orElse(null);
+
+            if (visitante == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("No existe un visitante registrado con DNI/NIE: " + visita.getVisitanteDni())
+                        .build();
+            }
+
+            if (visita.getFechaVisita() == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("La fechaVisita es obligatoria")
+                        .build();
+            }
+
+            if (visita.getVisitanteNombre() == null || visita.getVisitanteNombre().trim().isEmpty()) {
+                visita.setVisitanteNombre(visitante.getNombreCompleto());
+            }
+
+            visita.setVisitanteDni(visita.getVisitanteDni().trim());
+            visita.setReo(reo);
+
+            if (visita.getAutorizado() == null) {
+                visita.setAutorizado(true);
+            }
+
             em.persist(visita);
             em.flush();
+
             return Response.status(Response.Status.CREATED).entity(visita).build();
+
         } catch (Exception e) {
             LOG.severe("Error POST visita: " + e.getMessage());
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Error crear: " + e.getMessage()).build();
+                    .entity("Error crear: " + e.getMessage())
+                    .build();
         }
     }
 
@@ -64,22 +125,98 @@ public class VisitaResource {
     @Transactional
     public Response update(@PathParam("id") Integer id, Visita visitaUpdate,
             @Context HttpServletRequest req) {
+
         if (!autorizadoVisitas(req)) {
-            return Response.status(403).build();
+            return Response.status(Response.Status.FORBIDDEN).build();
         }
 
         Visita v = em.find(Visita.class, id);
         if (v == null) {
-            return Response.status(404).build();
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("No existe una visita con id: " + id)
+                    .build();
         }
 
-        // Solo campos simples
-        v.setVisitanteNombre(visitaUpdate.getVisitanteNombre());
-        v.setAutorizado(visitaUpdate.getAutorizado());
-        // NO: v.setReo() ← evita FK
+        try {
+            if (visitaUpdate == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("Los datos de la visita son obligatorios")
+                        .build();
+            }
 
-        em.merge(v);
-        return Response.ok(v).build();
+            if (visitaUpdate.getVisitanteNombre() != null
+                    && !visitaUpdate.getVisitanteNombre().trim().isEmpty()) {
+                v.setVisitanteNombre(visitaUpdate.getVisitanteNombre().trim());
+            }
+
+            if (visitaUpdate.getVisitanteDni() != null
+                    && !visitaUpdate.getVisitanteDni().trim().isEmpty()) {
+
+                Visitante visitante = em.createQuery(
+                        "SELECT vt FROM Visitante vt WHERE vt.dniNie = :dni", Visitante.class)
+                        .setParameter("dni", visitaUpdate.getVisitanteDni().trim())
+                        .getResultStream()
+                        .findFirst()
+                        .orElse(null);
+
+                if (visitante == null) {
+                    return Response.status(Response.Status.BAD_REQUEST)
+                            .entity("No existe un visitante registrado con DNI/NIE: "
+                                    + visitaUpdate.getVisitanteDni())
+                            .build();
+                }
+
+                v.setVisitanteDni(visitaUpdate.getVisitanteDni().trim());
+
+                if (visitaUpdate.getVisitanteNombre() == null
+                        || visitaUpdate.getVisitanteNombre().trim().isEmpty()) {
+                    v.setVisitanteNombre(visitante.getNombreCompleto());
+                }
+            }
+
+            if (visitaUpdate.getFechaVisita() != null) {
+                v.setFechaVisita(visitaUpdate.getFechaVisita());
+            }
+
+            if (visitaUpdate.getHoraEntrada() != null) {
+                v.setHoraEntrada(visitaUpdate.getHoraEntrada());
+            }
+
+            if (visitaUpdate.getHoraSalida() != null) {
+                v.setHoraSalida(visitaUpdate.getHoraSalida());
+            }
+
+            if (visitaUpdate.getAutorizado() != null) {
+                v.setAutorizado(visitaUpdate.getAutorizado());
+            }
+
+            if (visitaUpdate.getCodigoQr() != null
+                    && !visitaUpdate.getCodigoQr().trim().isEmpty()) {
+                v.setCodigoQr(visitaUpdate.getCodigoQr().trim());
+            }
+
+            if (visitaUpdate.getReo() != null && visitaUpdate.getReo().getId() != null) {
+                Reo reo = em.find(Reo.class, visitaUpdate.getReo().getId());
+
+                if (reo == null) {
+                    return Response.status(Response.Status.BAD_REQUEST)
+                            .entity("No existe un reo con id: " + visitaUpdate.getReo().getId())
+                            .build();
+                }
+
+                v.setReo(reo);
+            }
+
+            em.flush();
+
+            return Response.ok(v).build();
+
+        } catch (Exception e) {
+            LOG.severe("Error PUT visita: " + e.getMessage());
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Error actualizar: " + e.getMessage())
+                    .build();
+        }
     }
 
     private boolean autorizadoVisitas(@Context HttpServletRequest req) {
