@@ -1,6 +1,6 @@
 package model;
 
-import model.Reo;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -24,12 +24,15 @@ public class Visita {
     @Column(name = "visitante_dni", length = 9, nullable = false)
     private String visitanteDni;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Column(name = "fecha_visita", nullable = false)
     private LocalDate fechaVisita;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
     @Column(name = "hora_entrada")
     private LocalTime horaEntrada;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
     @Column(name = "hora_salida")
     private LocalTime horaSalida;
 
@@ -115,8 +118,5 @@ public class Visita {
     public void setCodigoQr(String codigoQr) {
         this.codigoQr = codigoQr;
     }
-    
-    
-    
 
 }

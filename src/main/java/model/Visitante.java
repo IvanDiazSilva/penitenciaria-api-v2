@@ -1,11 +1,11 @@
 package model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
-import jakarta.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-@XmlRootElement
+
 @Entity
 @Table(name = "visitantes")
 public class Visitante implements Serializable {
@@ -44,6 +44,7 @@ public class Visitante implements Serializable {
     @Column(length = 20)
     private String estado = "PENDIENTE";
 
+    @JsonFormat( shape= JsonFormat.Shape.STRING,pattern = "yyyy-MM-dd HH:mm:ss")
     @Column(name = "fecha_creacion", insertable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 

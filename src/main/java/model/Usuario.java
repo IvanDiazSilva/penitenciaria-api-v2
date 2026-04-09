@@ -2,6 +2,7 @@ package model;
 
 import jakarta.persistence.*;
 import jakarta.xml.bind.annotation.XmlRootElement;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @XmlRootElement
 @Entity
@@ -14,8 +15,10 @@ public class Usuario {
     @Column(unique = true, nullable = false)
     private String username;
     
+    @JsonIgnore
     @Column(nullable = false)
     private String password;  // Hash en prod
+    
     
     @Column(nullable = false, length = 20)
     private String rol;  // ADMIN, GUARDA, CONSULTOR
