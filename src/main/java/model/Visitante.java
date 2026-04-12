@@ -1,10 +1,10 @@
 package model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-
 
 @Entity
 @Table(name = "visitantes")
@@ -41,14 +41,20 @@ public class Visitante implements Serializable {
     @Column(name = "acepta_normativa")
     private Boolean aceptaNormativa;
 
-    @Column(length = 20)
+    @Column(length = 20, nullable = false)
     private String estado = "PENDIENTE";
 
-    @JsonFormat( shape= JsonFormat.Shape.STRING,pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     @Column(name = "fecha_creacion", insertable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
-    public Visitante() {}
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", unique = true)
+    @JsonIgnore
+    private Usuario usuario;
+
+    public Visitante() {
+    }
 
     public Long getId() {
         return id;
@@ -144,5 +150,13 @@ public class Visitante implements Serializable {
 
     public void setFechaCreacion(LocalDateTime fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
+    }
+
+    public Usuario getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
     }
 }

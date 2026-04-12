@@ -20,7 +20,8 @@ public class JwtUtil {
         Date expiracion = new Date(ahora.getTime() + EXPIRATION_MS);
 
         return Jwts.builder()
-                .setSubject(usuario.getUsername())
+                .setSubject(usuario.getUsername())   // por ahora, username = DNI del visitante
+                .claim("userId", usuario.getId())
                 .claim("rol", usuario.getRol())
                 .setIssuedAt(ahora)
                 .setExpiration(expiracion)
@@ -45,6 +46,11 @@ public class JwtUtil {
         return getClaims(token).get("rol", String.class);
     }
 
+    public static Long getUserId(String token) {
+        Integer userId = getClaims(token).get("userId", Integer.class);
+        return userId != null ? userId.longValue() : null;
+    }
+
     private static Claims getClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(SECRET_KEY)
@@ -52,5 +58,4 @@ public class JwtUtil {
                 .parseClaimsJws(token)
                 .getBody();
     }
-    
 }

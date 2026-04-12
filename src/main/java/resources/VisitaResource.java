@@ -50,14 +50,32 @@ public class VisitaResource {
     }
 
     @GET
-    public Response getAll() {
-        List<Visita> visitas = em.createQuery(
-                "SELECT v FROM Visita v LEFT JOIN FETCH v.reo ORDER BY v.fechaVisita DESC",
-                Visita.class
-        ).getResultList();
+    @Path("/mis-citas")
+    public Response getMisCitas() {
+        String username = (String) req.getAttribute("username");
+        String rol = (String) req.getAttribute("rol");
 
-        LOG.info("GET /api/visitas: " + visitas.size() + " visitas");
-        return Response.ok(visitas).build();
+        if (rol == null || !rol.equalsIgnoreCase("VISITANTE")) {
+            return Response.status(Response.Status.FORBIDDEN)
+                    .entity(Map.of("error", "Acceso denegado"))
+                    .build();
+        }
+
+        if (username == null || username.trim().isEmpty()) {
+            return Response.status(Response.Status.UNAUTHORIZED)
+                    .entity(Map.of("error", "Usuario no identificado"))
+                    .build();
+        }
+
+        List<Visita> citas = em.createQuery(
+                "SELECT v FROM Visita v LEFT JOIN FETCH v.reo "
+                + "WHERE v.visitanteDni = :dni ORDER BY v.fechaVisita DESC",
+                Visita.class)
+                .setParameter("dni", username.trim())
+                .getResultList();
+
+        LOG.info("GET /api/visitas/mis-citas para DNI=" + username + ": " + citas.size() + " citas");
+        return Response.ok(citas).build();
     }
 
     @GET
@@ -72,6 +90,28 @@ public class VisitaResource {
         }
 
         return Response.ok(v).build();
+    }
+
+    @GET
+    @Path("/mis-citas")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getMisCitas(@Context HttpServletRequest request) {
+        String username = (String) request.getAttribute("username");
+        String rol = (String) request.getAttribute("rol");
+
+        if (rol == null || !rol.equals("VISITANTE")) {
+            return Response.status(Response.Status.FORBIDDEN)
+                    .entity("{\"error\":\"Acceso denegado\"}")
+                    .build();
+        }
+
+        List<Visita> citas = em.createQuery(
+                "SELECT v FROM Visita v WHERE v.visitanteDni = :dni ORDER BY v.fechaVisita DESC",
+                Visita.class)
+                .setParameter("dni", username)
+                .getResultList();
+
+        return Response.ok(citas).build();
     }
 
     @POST
@@ -270,7 +310,10 @@ public class VisitaResource {
     @Path("qr/{id}")
     @Transactional
     public Response generarQR(@PathParam("id") Integer id) {
-        if (!tieneRol("VISITANTE", "ADMIN")) {
+        String username = (String) req.getAttribute("username");
+        String rol = (String) req.getAttribute("rol");
+
+        if (rol == null || (!rol.equalsIgnoreCase("VISITANTE") && !rol.equalsIgnoreCase("ADMIN"))) {
             return Response.status(Response.Status.FORBIDDEN)
                     .entity(Map.of("error", "Solo visitantes o admin pueden generar QR"))
                     .build();
@@ -283,12 +326,33 @@ public class VisitaResource {
                     .build();
         }
 
+        if (rol.equalsIgnoreCase("VISITANTE")) {
+            if (username == null || username.trim().isEmpty()) {
+                return Response.status(Response.Status.UNAUTHORIZED)
+                        .entity(Map.of("error", "Usuario no identificado"))
+                        .build();
+            }
+
+            if (v.getVisitanteDni() == null || !v.getVisitanteDni().equalsIgnoreCase(username.trim())) {
+                return Response.status(Response.Status.FORBIDDEN)
+                        .entity(Map.of("error", "No puedes generar QR para una visita que no es tuya"))
+                        .build();
+            }
+        }
+
         String qrCode = QR_PREFIX + UUID.randomUUID().toString().substring(0, 8) + "_" + id;
         v.setCodigoQr(qrCode);
-        em.merge(v);
 
-        LOG.info("QR generado para visita " + id + ": " + qrCode);
-        return Response.ok(Map.of("qr", qrCode)).build();
+        em.merge(v);
+        em.flush();
+
+        LOG.info("QR generado para visita " + id + " por usuario " + username + ": " + qrCode);
+
+        return Response.ok(Map.of(
+                "mensaje", "QR generado correctamente",
+                "qr", qrCode,
+                "visitaId", v.getId()
+        )).build();
     }
 
     @POST

@@ -6,7 +6,9 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.core.Context;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -18,8 +20,28 @@ public class VisitanteResource {
 
     private static final Logger LOG = Logger.getLogger(VisitanteResource.class.getName());
 
+    @Context
+    private HttpServletRequest req;
+
     @PersistenceContext(unitName = "PenitenciariaPU")
     private EntityManager em;
+
+    private boolean tieneRol(String... rolesPermitidos) {
+        String rol = (String) req.getAttribute("rol");
+        LOG.info("ROL LEIDO EN VisitanteResource = '" + rol + "'");
+
+        if (rol == null) {
+            return false;
+        }
+
+        for (String permitido : rolesPermitidos) {
+            if (rol.equalsIgnoreCase(permitido)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     @POST
     @Transactional
@@ -108,6 +130,12 @@ public class VisitanteResource {
 
     @GET
     public Response getAll() {
+        if (!tieneRol("ADMIN", "GUARDIA")) {
+            return Response.status(Response.Status.FORBIDDEN)
+                    .entity(Map.of("error", "No autorizado"))
+                    .build();
+        }
+
         List<Visitante> visitantes = em.createQuery(
                 "SELECT v FROM Visitante v ORDER BY v.fechaCreacion DESC",
                 Visitante.class
@@ -116,5 +144,71 @@ public class VisitanteResource {
         LOG.info("GET /visitantes -> " + visitantes.size() + " visitantes");
 
         return Response.ok(visitantes).build();
+    }
+
+    @GET
+    @Path("{id}")
+    public Response getById(@PathParam("id") Long id) {
+        if (!tieneRol("ADMIN", "GUARDIA")) {
+            return Response.status(Response.Status.FORBIDDEN)
+                    .entity(Map.of("error", "No autorizado"))
+                    .build();
+        }
+
+        Visitante visitante = em.find(Visitante.class, id);
+
+        if (visitante == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of("error", "No existe un visitante con id: " + id))
+                    .build();
+        }
+
+        return Response.ok(visitante).build();
+    }
+
+    @PUT
+    @Path("{id}/estado")
+    @Transactional
+    public Response actualizarEstado(@PathParam("id") Long id, Map<String, String> body) {
+        if (!tieneRol("ADMIN")) {
+            return Response.status(Response.Status.FORBIDDEN)
+                    .entity(Map.of("error", "No autorizado"))
+                    .build();
+        }
+
+        Visitante visitante = em.find(Visitante.class, id);
+        if (visitante == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of("error", "No existe un visitante con id: " + id))
+                    .build();
+        }
+
+        if (body == null || body.get("estado") == null || body.get("estado").trim().isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "El campo estado es obligatorio"))
+                    .build();
+        }
+
+        String nuevoEstado = body.get("estado").trim().toUpperCase();
+
+        if (!nuevoEstado.equals("PENDIENTE")
+                && !nuevoEstado.equals("APROBADO")
+                && !nuevoEstado.equals("RECHAZADO")) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Estado no válido. Usa PENDIENTE, APROBADO o RECHAZADO"))
+                    .build();
+        }
+
+        visitante.setEstado(nuevoEstado);
+        em.merge(visitante);
+        em.flush();
+
+        LOG.info("Estado visitante id=" + id + " actualizado a " + nuevoEstado);
+
+        return Response.ok(Map.of(
+                "mensaje", "Estado actualizado correctamente",
+                "id", visitante.getId(),
+                "estado", visitante.getEstado()
+        )).build();
     }
 }
