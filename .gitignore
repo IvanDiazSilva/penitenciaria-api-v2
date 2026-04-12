@@ -5,3 +5,5 @@ nbactions.xml
 *.iml
 /.idea
 /.vscode
+.angular
+node_modules
