@@ -14,13 +14,13 @@ import { VisitaService } from '../../services/visita.service';
 export class AltaVisitaComponent {
 
   nuevaVisita = {
+    reoId: null,
     visitanteNombre: '',
     visitanteDni: '',
     fechaVisita: '',
-    idReo: null,
-    autorizado: true,
     horaEntrada: '09:00',
-    horaSalida: '10:00'
+    horaSalida: '10:00',
+    autorizado: true,
   };
 
   constructor(
@@ -28,32 +28,44 @@ export class AltaVisitaComponent {
     private router: Router
   ) {}
 
-  guardarVisita() {
-    this.visitaService.registrarVisita(this.nuevaVisita).subscribe({
-      next: (res) => {
-        alert('✅ Visita registrada con éxito.');
-        this.limpiarFormulario();
-      },
-      error: (err) => {
-        console.error("❌ Error 400:", err);
-        alert('Error al registrar. Revisa los datos.');
-      }
-    });
-  }
+ guardarVisita() {
+  const cuerpoEnvio = {
+    visitanteNombre: this.nuevaVisita.visitanteNombre,
+    visitanteDni: this.nuevaVisita.visitanteDni,
+    fechaVisita: this.nuevaVisita.fechaVisita,
+    horaEntrada: this.nuevaVisita.horaEntrada + ':00', 
+    horaSalida: this.nuevaVisita.horaSalida + ':00',
+    autorizado: this.nuevaVisita.autorizado,
+    reo: {
+      // FORZAMOS QUE SEA NÚMERO AQUÍ MISMO
+      id: Number(this.nuevaVisita.reoId) 
+    }
+  };
+
+  this.visitaService.registrarVisita(cuerpoEnvio).subscribe({
+    next: (res: any) => {
+      alert('✅ ¡FUNCIONÓ!');
+      this.limpiarFormulario();
+    },
+    error: (err: any) => {
+      console.error("Detalle del error:", err.error);
+      alert('Sigue dando 400. Mira la consola de Java.');
+    }
+  });
+}
 
   limpiarFormulario() {
     this.nuevaVisita = {
+      reoId: null,
       visitanteNombre: '',
       visitanteDni: '',
       fechaVisita: '',
-      idReo: null,
-      autorizado: true,
       horaEntrada: '09:00',
-      horaSalida: '10:00'
+      horaSalida: '10:00',
+      autorizado: true
     };
   }
 
-  // Función para regresar al portal
   volverAlPortal() {
     this.router.navigate(['/portal-visitante']);
   }

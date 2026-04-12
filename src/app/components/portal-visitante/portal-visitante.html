@@ -2,10 +2,10 @@
   <div class="login-card">
     
     <div class="logo-shield-container">
-      <i class="fas fa-shield-alt logo-shield"></i>
+      <span class="logo-shield">📝</span>
     </div>
     <h2>Portal del visitante</h2>
-    <p class="subtitle">Gestión de accesos y citas</p>
+    <p class="subtitle">CONTROL PENITENCIARIO - CU-E05</p>
 
     <div [ngSwitch]="pasoActual">
 
@@ -14,34 +14,116 @@
         <div class="options-grid">
           
           <div class="option-card" (click)="forzarVista('REGISTRO')">
-            <i class="fas fa-user-plus"></i>
             <div class="text-group">
               <span class="title">Nuevo registro</span>
               <span class="desc">Si es tu primera vez, solicita acceso aquí.</span>
             </div>
           </div>
 
-          <div class="option-card" (click)="forzarVista('ESPERA')">
-            <i class="fas fa-search"></i>
+          <div class="option-card" (click)="forzarVista('CONSULTA')">
             <div class="text-group">
               <span class="title">Consultar estado</span>
-              <span class="desc">Verifica la aprobación de tu acceso.</span>
-            </div>
-          </div>
-
-          <div class="option-card" (click)="irAAltaVisita()">
-            <i class="fas fa-calendar-alt"></i>
-            <div class="text-group">
-              <span class="title">Solicitar cita</span>
-              <span class="desc">Agenda tu visita al centro.</span>
+              <span class="desc">¿Ya te registraste? Mira si estás aprobado.</span>
             </div>
           </div>
 
         </div>
       </div>
 
-      <div *ngSwitchCase="'REGISTRO'"> ... </div>
-      <div *ngSwitchCase="'ESPERA'"> ... </div>
+      <div *ngSwitchCase="'REGISTRO'" class="registro-container">
+        <div class="stepper-header">
+          <span class="step-indicator">PASO {{subPaso}} DE 3</span>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="(subPaso / 3) * 100"></div>
+          </div>
+        </div>
+
+        <div [ngSwitch]="subPaso">
+          <div *ngSwitchCase="1" class="step-content animate-in">
+            <span class="label-roles">DATOS DE IDENTIDAD</span>
+            <div class="input-group">
+              <label>NOMBRE COMPLETO</label>
+              <input type="text" [(ngModel)]="datos.nombreCompleto" name="nom" placeholder="APELLIDOS Y NOMBRE">
+            </div>
+            <div class="input-group">
+              <label>DOCUMENTO (DNI/NIE)</label>
+              <input type="text" [(ngModel)]="datos.dniNie" name="dni" placeholder="12345678X">
+            </div>
+            <div class="input-group">
+              <label>NACIONALIDAD</label>
+              <input type="text" [(ngModel)]="datos.nacionalidad" name="nac" placeholder="EJ: ESPAÑOLA">
+            </div>
+          </div>
+
+          <div *ngSwitchCase="2" class="step-content animate-in">
+            <span class="label-roles">DATOS DE CONTACTO</span>
+            <div class="input-group">
+              <label>TELÉFONO MÓVIL</label>
+              <input type="tel" [(ngModel)]="datos.telefono" name="tel" placeholder="600 000 000">
+            </div>
+            <div class="input-group">
+              <label>E-MAIL</label>
+              <input type="email" [(ngModel)]="datos.email" name="mail" placeholder="CORREO ELECTRÓNICO">
+            </div>
+            <div class="input-group">
+              <label>DIRECCIÓN COMPLETA</label>
+              <input type="text" [(ngModel)]="datos.direccion" name="dir" placeholder="CALLE, CIUDAD, CP">
+            </div>
+          </div>
+
+          <div *ngSwitchCase="3" class="step-content animate-in">
+            <span class="label-roles">DETALLES DE LA VISITA</span>
+            <div class="input-group">
+              <label>INTERNO A VISITAR</label>
+              <input type="text" [(ngModel)]="datos.nombreInterno" name="int" placeholder="NOMBRE DEL INTERNO">
+            </div>
+            <div class="input-group">
+              <label>PARENTESCO</label>
+              <input type="text" [(ngModel)]="datos.parentesco" name="par" placeholder="EJ: HERMANO, AMIGO...">
+            </div>
+            <div class="check-group">
+              <input type="checkbox" [(ngModel)]="datos.acepta" name="acep" id="checkAcepta">
+              <label for="checkAcepta">ACEPTO LA NORMATIVA DE SEGURIDAD</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="registro-actions">
+          <button class="btn-primary" (click)="siguiente()">
+            {{ subPaso === 3 ? 'FINALIZAR' : 'CONTINUAR' }}
+          </button>
+          <button class="btn-secondary" (click)="atras()">
+            {{ subPaso === 1 ? 'CANCELAR' : 'VOLVER' }}
+          </button>
+        </div>
+      </div>
+
+      <div *ngSwitchCase="'CONSULTA'" class="animate-in">
+        <span class="label-roles">BUSCAR MI SOLICITUD</span>
+        <div class="input-group">
+          <label>INTRODUZCA SU DNI/NIE</label>
+          <input type="text" [(ngModel)]="dniBusqueda" placeholder="12345678X">
+        </div>
+        
+        <div class="registro-actions">
+          <button class="btn-primary" (click)="verificarEstado()">BUSCAR</button>
+          <button class="btn-secondary" (click)="forzarVista('INICIO')">VOLVER</button>
+        </div>
+
+        <div *ngIf="resultadoEstado" class="status-result animate-in">
+          <p>Estado actual: <strong>{{ resultadoEstado }}</strong></p>
+          <div *ngIf="resultadoEstado === 'APROBADO'" class="alert-success">
+            Ya puede acceder con su usuario desde el <a routerLink="/login">Login</a>.
+          </div>
+        </div>
+      </div>
+
+      <div *ngSwitchCase="'ESPERA'" class="animate-in" style="text-align: center;">
+        <span style="font-size: 3rem;">⏳</span>
+        <h3>Solicitud enviada</h3>
+        <p class="subtitle">Su registro está siendo revisado por el departamento de seguridad.</p>
+        <button class="btn-primary" (click)="forzarVista('INICIO')">ENTENDIDO</button>
+      </div>
 
     </div>
   </div>

@@ -1,0 +1,38 @@
+<div class="login-container">
+  <div class="login-card animate-in">
+    <div class="logo-shield-container"><span class="logo-shield">🏠</span></div>
+    <h2>Panel de Usuario</h2>
+    <p class="subtitle">PORTAL DEL VISITANTE - GESTIÓN</p>
+    <hr style="border: 0; border-top: 1px solid #edf2f7; margin-bottom: 10px;">
+
+    <div class="info-section">
+      <span class="section-label">TU PRÓXIMA VISITA</span>
+      
+      <div *ngIf="proximaCita; else sinCita" class="appointment-box">
+        <div class="date-tag">
+          <span class="num">{{ proximaCita.fecha | date:'dd' }}</span>
+          <span class="month">{{ proximaCita.fecha | date:'MMM' }}</span>
+        </div>
+        <div class="details">
+          <strong>{{ proximaCita.nombreInterno }}</strong>
+          <p>{{ proximaCita.hora }}h - Módulo {{ proximaCita.modulo }}</p>
+        </div>
+      </div>
+
+      <ng-template #sinCita>
+        <div class="empty-msg">No tienes citas programadas</div>
+      </ng-template>
+    </div>
+
+    <button class="btn-primary" (click)="irAAltaCita()">SOLICITAR NUEVA CITA</button>
+    
+    <div class="row-inputs" style="margin-top: 10px;">
+      <button class="btn-mini" (click)="verMisCitas()">HISTORIAL</button>
+      <button class="btn-mini">NORMATIVA</button>
+    </div>
+
+    <button class="btn-secondary-custom" (click)="logout()">
+      CERRAR SESIÓN
+    </button>
+  </div>
+</div>

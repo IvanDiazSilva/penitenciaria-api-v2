@@ -10,17 +10,17 @@
   padding: 20px;
 }
 
-/* TARJETA LOGIN / PORTAL */
+/* TARJETA LOGIN - Ajustada la altura ya que no hay roles */
 .login-card {
   background: #fff;
   width: 100%;
   max-width: 420px;
-  height: 520px;
-  padding: 25px 30px;
+  min-height: 400px; /* Reducida de 520px a 400px aprox */
+  padding: 35px 30px;
   border-radius: 20px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
   box-shadow: 0 20px 50px rgba(0,0,0,0.5);
   overflow: hidden;
 }
@@ -29,43 +29,44 @@
 .logo-shield-container {
   display: flex;
   justify-content: center;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
 .logo-shield { 
-  font-size: 2.5rem; 
+  font-size: 2.8rem; 
   color: #0d1117; 
 }
 h2 { 
-  font-size: 1.4rem; 
+  font-size: 1.6rem; 
   font-weight: 800; 
   text-align: center; 
-  margin: 0 0 2px; 
+  margin: 0 0 5px; 
 }
 .subtitle { 
-  font-size: 0.75rem; 
+  font-size: 0.85rem; 
   color: #718096; 
   text-align: center; 
-  margin-bottom: 15px; 
+  margin-bottom: 25px; 
 }
 
-/* INPUTS EN COLUMNA */
+/* INPUTS */
 .input-group {
   display: flex;
   flex-direction: column;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 .input-group label {
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #4a5568;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 .input-group input {
-  padding: 10px;
+  padding: 12px;
   border-radius: 10px;
   border: 2px solid #edf2f7;
-  font-size: 0.9rem;
+  font-size: 1rem;
   background: #f7fafc;
   transition: all 0.2s;
 }
@@ -73,74 +74,54 @@ h2 {
   border-color: #0d1117;
   outline: none;
   background: #fff;
-  box-shadow: 0 0 6px rgba(13,17,23,0.15);
-}
-
-/* LABEL ROLES */
-.label-roles { 
-  text-align: center; 
-  font-size: 0.75rem; 
-  color: #718096; 
-  font-weight: 600; 
-  margin-bottom: 8px; 
-}
-
-/* OPCIONES / ROLES EN COLUMNA SUAVE */
-.options-grid {
-  display: flex;
-  flex-direction: column; /* vertical */
-  gap: 12px;
-  align-items: stretch;
-  margin-bottom: 15px;
-}
-.option-card {
-  padding: 12px;
-  border-radius: 12px;
-  border: 2px solid #edf2f7;
-  background: #fff;
-  cursor: pointer;
-  display: flex;
-  align-items: center; 
-  gap: 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-transform: capitalize; /* solo inicial mayúscula */
-  color: #4a5568; /* gris suave */
-  transition: all 0.2s;
-}
-.option-card i {
-  font-size: 1.4rem;
-  color: #4a5568; /* gris suave */
-}
-.option-card span {
-  font-weight: 600;
-  color: #4a5568;
-}
-.option-card.active {
-  background: #0d1117;
-  color: #fff;
-  border-color: #0d1117;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-.option-card.active i,
-.option-card.active span {
-  color: #fff;
+  box-shadow: 0 0 8px rgba(13,17,23,0.1);
 }
 
 /* BOTONES */
 .btn-primary {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   font-weight: 700;
-  border-radius: 10px;
+  font-size: 1rem;
+  border-radius: 12px;
   background: #0d1117;
   color: #fff;
-  margin-top: 12px;
+  border: none;
+  margin-top: 10px;
   cursor: pointer;
   transition: all 0.2s;
 }
-.btn-primary:hover { background: #1e293b; }
+.btn-primary:hover { 
+  background: #2d3748; 
+  transform: translateY(-1px);
+}
+
+/* NUEVA SECCIÓN DE REGISTRO */
+.registro-section {
+  margin-top: 25px;
+  text-align: center;
+  border-top: 1px solid #edf2f7;
+  padding-top: 20px;
+}
+.text-muted {
+  font-size: 0.85rem;
+  color: #718096;
+  margin-bottom: 5px;
+}
+.btn-link {
+  background: none;
+  border: none;
+  color: #2b6cb0; /* Azul profesional */
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.btn-link:hover {
+  color: #2c5282;
+  text-decoration: underline;
+}
 
 .btn-secondary {
   width: 100%;
@@ -149,56 +130,7 @@ h2 {
   font-size: 0.8rem;
   border: none;
   background: none;
-  color: #64748b;
-  margin-top: 8px;
+  color: #a0aec0;
+  margin-top: 15px;
   cursor: pointer;
-}
-
-/* ESTADOS */
-.status-icon { font-size: 3rem; margin-bottom: 8px; }
-.status-icon.pending { color: #f59e0b; }
-.status-icon.success { color: #10b981; }
-.info-text { font-size: 0.8rem; color: #64748b; margin-bottom: 12px; text-align: center; }
-
-/* ANIMACIONES */
-.animate-in {
-  min-height: 300px;
-}
-
-/* Bolitas de progreso del registro */
-.registration-stepper {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-}
-.mini-step {
-  width: 30px;
-  height: 4px;
-  background: #edf2f7;
-  border-radius: 10px;
-  transition: all 0.3s;
-}
-.mini-step.active {
-  background: #0d1117; /* El color de tu logo */
-  width: 45px;
-}
-
-/* Caja de términos */
-.terms-box {
-  display: flex;
-  gap: 10px;
-  background: #f8fafc;
-  padding: 12px;
-  border-radius: 10px;
-  text-align: left;
-}
-.terms-box label {
-  font-size: 0.7rem;
-  color: #718096;
-  line-height: 1.2;
-}
-
-/* Ajuste del botón para que esté abajo del todo */
-.mt-auto {
-  margin-top: auto;
 }

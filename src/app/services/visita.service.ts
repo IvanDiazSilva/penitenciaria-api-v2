@@ -7,62 +7,67 @@ import { Observable } from 'rxjs';
 })
 export class VisitaService {
 
-  private apiUrl = 'http://localhost:8080/penitenciaria-api/api/visitas';
+  private urlVisitas = 'http://localhost:8080/penitenciaria-api/api/visitas';
+  private urlVisitantes = 'http://localhost:8080/penitenciaria-api/api/visitantes';
 
   constructor(private http: HttpClient) { }
 
   /**
-   * REGISTRAR VISITA (POST)
-   * Aquí es donde corregimos el Error 400 de deserialización
+   * 1. REGISTRO DE VISITANTE (Portal-Visitante)
+   * Ajustado al formato exacto de tu BBDD
    */
-  registrarVisita(datos: any): Observable<any> {
+ registrarNuevoVisitante(datos: any): Observable<any> {
+  const token = localStorage.getItem('token');
+  const headers = new HttpHeaders({ 
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  });
+
+  // MAPEO EXACTO CON LA ENTIDAD JAVA (Visitante.java)
+  const paquete = {
+    nombreCompleto: datos.nombreCompleto,
+    dniNie: datos.dniNie,
+    nacionalidad: datos.nacionalidad,
+    telefono: datos.telefono,
+    email: datos.email,
+    direccion: datos.direccion,
+    nombreInterno: datos.nombreInterno,
+    parentesco: datos.parentesco,
+    aceptaNormativa: datos.acepta, // <--- ANTES ERA 'acepta', AQUÍ ESTABA EL ERROR 400
+    estado: 'PENDIENTE'            // Coincide con el default de Java
+  };
+
+  console.log("🚀 Enviando a Java con nombres corregidos:", paquete);
+
+  return this.http.post(this.urlVisitantes, paquete, { headers });
+}
+
+  /**
+   * 2. ALTA DE CITA (Para el reo)
+   */
+  registrarVisita(body: any): Observable<any> {
     const token = localStorage.getItem('token');
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     });
-
-    // IMPORTANTE: Estos nombres deben coincidir con los atributos de la Clase Java (Entity)
-    const body = {
-      // 1. reo_id -> Java suele esperar el objeto 'reo' con su 'id'
-      reo: { 
-        id: Number(datos.idReo) 
-      },
-      
-      // 2. visitante_nombre -> Java espera 'visitanteNombre'
-      visitanteNombre: datos.visitanteNombre,
-      
-      // 3. visitante_dni -> Java espera 'visitanteDni'
-      visitanteDni: datos.visitanteDni,
-      
-      // 4. fecha_visita -> Java espera 'fechaVisita'
-      fechaVisita: datos.fechaVisita,
-      
-      // 5. hora_entrada y hora_salida (Postgres pide HH:mm:ss)
-      horaEntrada: datos.horaEntrada.length === 5 ? datos.horaEntrada + ":00" : datos.horaEntrada,
-      horaSalida: datos.horaSalida.length === 5 ? datos.horaSalida + ":00" : datos.horaSalida,
-      
-      // 6. autorizado (Boolean)
-      autorizado: datos.autorizado,
-      
-      // 7. codigo_qr (Obligatorio en tu captura de pgAdmin)
-      // Lo enviamos como string vacío o temporal si no tienes input
-      codigoQr: "QR-PENDIENTE" 
-    };
-
-    console.log("📡 Cuerpo enviado (Revisa que no falte nada):", body);
-
-    return this.http.post(this.apiUrl, body, { headers });
+    return this.http.post(this.urlVisitas, body, { headers });
   }
 
   /**
-   * LISTADO DE VISITAS (GET)
+   * 3. LISTADO DE VISITAS
    */
   obtenerVisitas(): Observable<any[]> {
     const token = localStorage.getItem('token');
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
-    return this.http.get<any[]>(this.apiUrl, { headers });
+    const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
+    return this.http.get<any[]>(this.urlVisitas, { headers });
   }
+
+  consultarEstadoVisitante(dni: string) {
+  // Ajusta esta URL según lo que Iván te diga (ej: /api/visitantes/estado/)
+  const url = `http://localhost:8080/api/visitantes/estado/${dni}`;
+  
+  // Hacemos una petición GET para obtener el estado del DNI
+  return this.http.get(url);
+}
 }
