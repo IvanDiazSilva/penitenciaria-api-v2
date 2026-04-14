@@ -5,6 +5,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
 import jakarta.persistence.PersistenceContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
@@ -102,7 +103,7 @@ public class VisitanteResource {
                     "SELECT COUNT(v) FROM Visitante v WHERE UPPER(v.dniNie) = :dniNie",
                     Long.class
             ).setParameter("dniNie", visitante.getDniNie())
-             .getSingleResult();
+                    .getSingleResult();
 
             if (existentes > 0) {
                 return Response.status(Response.Status.CONFLICT)
@@ -164,6 +165,41 @@ public class VisitanteResource {
         }
 
         return Response.ok(visitante).build();
+    }
+
+    @GET
+    @Path("/estado/{dni}")
+    public Response consultarEstadoPorDni(@PathParam("dni") String dni) {
+        if (dni == null || dni.trim().isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "El DNI/NIE es obligatorio"))
+                    .build();
+        }
+
+        String dniNormalizado = dni.trim().toUpperCase();
+
+        try {
+            Visitante visitante = em.createQuery(
+                    "SELECT v FROM Visitante v WHERE UPPER(v.dniNie) = :dniNie",
+                    Visitante.class
+            ).setParameter("dniNie", dniNormalizado)
+                    .getSingleResult();
+
+            LOG.info("GET /visitantes/estado/" + dniNormalizado + " -> " + visitante.getEstado());
+
+            return Response.ok(Map.of(
+                    "dniNie", visitante.getDniNie(),
+                    "estado", visitante.getEstado(),
+                    "nombreCompleto", visitante.getNombreCompleto()
+            )).build();
+
+        } catch (NoResultException e) {
+            LOG.info("GET /visitantes/estado/" + dniNormalizado + " -> NO ENCONTRADO");
+
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of("error", "No se encontró ninguna solicitud con ese DNI/NIE"))
+                    .build();
+        }
     }
 
     @PUT
