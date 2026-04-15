@@ -92,28 +92,6 @@ public class VisitaResource {
         return Response.ok(v).build();
     }
 
-    @GET
-    @Path("/mis-citas")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getMisCitas(@Context HttpServletRequest request) {
-        String username = (String) request.getAttribute("username");
-        String rol = (String) request.getAttribute("rol");
-
-        if (rol == null || !rol.equals("VISITANTE")) {
-            return Response.status(Response.Status.FORBIDDEN)
-                    .entity("{\"error\":\"Acceso denegado\"}")
-                    .build();
-        }
-
-        List<Visita> citas = em.createQuery(
-                "SELECT v FROM Visita v WHERE v.visitanteDni = :dni ORDER BY v.fechaVisita DESC",
-                Visita.class)
-                .setParameter("dni", username)
-                .getResultList();
-
-        return Response.ok(citas).build();
-    }
-
     @POST
     @Transactional
     public Response create(Visita visita) {
@@ -358,16 +336,23 @@ public class VisitaResource {
     @POST
     @Path("validar-qr")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Produces(MediaType.APPLICATION_JSON)
     public Response validarQR(@FormParam("qr") String qrCode) {
         if (!tieneRol("GUARDIA", "ADMIN")) {
             return Response.status(Response.Status.FORBIDDEN)
-                    .entity(Map.of("error", "Solo guardias o admin pueden validar QR"))
+                    .entity(Map.of(
+                            "valido", false,
+                            "mensaje", "Solo guardias o administradores pueden validar códigos QR"
+                    ))
                     .build();
         }
 
         if (qrCode == null || qrCode.trim().isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "El parámetro qr es obligatorio"))
+                    .entity(Map.of(
+                            "valido", false,
+                            "mensaje", "El parámetro qr es obligatorio"
+                    ))
                     .build();
         }
 
@@ -377,7 +362,10 @@ public class VisitaResource {
                 .getResultList();
 
         if (visitas.isEmpty()) {
-            return Response.ok(Map.of("valido", false)).build();
+            return Response.ok(Map.of(
+                    "valido", false,
+                    "mensaje", "QR no válido o no encontrado"
+            )).build();
         }
 
         Visita v = visitas.get(0);
@@ -385,10 +373,14 @@ public class VisitaResource {
         if (Boolean.TRUE.equals(v.getAutorizado())) {
             return Response.ok(Map.of(
                     "valido", true,
-                    "visitante", v.getVisitanteNombre()
+                    "visitante", v.getVisitanteNombre(),
+                    "mensaje", "QR validado correctamente"
             )).build();
         }
 
-        return Response.ok(Map.of("valido", false)).build();
+        return Response.ok(Map.of(
+                "valido", false,
+                "mensaje", "La visita existe, pero no está autorizada"
+        )).build();
     }
 }

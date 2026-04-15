@@ -23,17 +23,19 @@ public class JwtFilter implements ContainerRequestFilter {
             return;
         }
 
-        if ("login".equals(path) || path.endsWith("/login")) {
+        if ("login".equals(path) || path.endsWith("/login")
+                || "visitantes/preregistro".equals(path)
+                || path.endsWith("/visitantes/preregistro")) {
             return;
         }
 
         String authHeader = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             requestContext.abortWith(
-                Response.status(Response.Status.UNAUTHORIZED)
-                    .type(MediaType.APPLICATION_JSON)
-                    .entity("{\"error\":\"Falta cabecera Authorization\"}")
-                    .build()
+                    Response.status(Response.Status.UNAUTHORIZED)
+                            .type(MediaType.APPLICATION_JSON)
+                            .entity("{\"error\":\"Falta cabecera Authorization\"}")
+                            .build()
             );
             return;
         }
@@ -42,10 +44,10 @@ public class JwtFilter implements ContainerRequestFilter {
 
         if (!JwtUtil.validarToken(token)) {
             requestContext.abortWith(
-                Response.status(Response.Status.UNAUTHORIZED)
-                    .type(MediaType.APPLICATION_JSON)
-                    .entity("{\"error\":\"Token inválido\"}")
-                    .build()
+                    Response.status(Response.Status.UNAUTHORIZED)
+                            .type(MediaType.APPLICATION_JSON)
+                            .entity("{\"error\":\"Token inválido\"}")
+                            .build()
             );
             return;
         }
