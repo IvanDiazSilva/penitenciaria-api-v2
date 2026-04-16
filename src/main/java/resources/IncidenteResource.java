@@ -22,8 +22,9 @@ public class IncidenteResource {
     private EntityManager em;
 
     private boolean autorizadoIncidentes(@Context HttpServletRequest req) {
-        String rol = (String) req.getAttribute("rol");  // "ADMIN"
-        return rol != null && rol.equalsIgnoreCase("admin");  // Case insensitive
+        String rol = (String) req.getAttribute("rol");
+        return rol != null && (rol.equalsIgnoreCase("admin")
+                || rol.equalsIgnoreCase("guardia"));
     }
 
     @GET
@@ -88,13 +89,25 @@ public class IncidenteResource {
     @Transactional
     public Response delete(@PathParam("id") Long id, @Context HttpServletRequest req) {
         if (!autorizadoIncidentes(req)) {
-            return Response.status(403).build();
+            return Response.status(403)
+                    .entity("{\"error\":\"No autorizado para eliminar incidentes\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         }
+
         Incidente i = em.find(Incidente.class, id);
         if (i == null) {
-            return Response.status(404).build();
+            return Response.status(404)
+                    .entity("{\"error\":\"Incidente no encontrado\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         }
+
         em.remove(i);
-        return Response.ok().build();
+
+        return Response.ok(
+                "{\"mensaje\":\"Incidente eliminado correctamente\",\"id\":" + id + "}",
+                MediaType.APPLICATION_JSON
+        ).build();
     }
 }

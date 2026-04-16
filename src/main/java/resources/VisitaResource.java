@@ -170,9 +170,12 @@ public class VisitaResource {
     @Path("{id}")
     @Transactional
     public Response update(@PathParam("id") Integer id, Visita visitaUpdate) {
-        if (!tieneRol("ADMIN", "GUARDIA")) {
-            return Response.status(Response.Status.FORBIDDEN)
-                    .entity(Map.of("error", "No autorizado"))
+        String username = (String) req.getAttribute("username");
+        String rol = (String) req.getAttribute("rol");
+
+        if (rol == null) {
+            return Response.status(Response.Status.UNAUTHORIZED)
+                    .entity(Map.of("error", "Usuario no identificado"))
                     .build();
         }
 
@@ -180,6 +183,24 @@ public class VisitaResource {
         if (v == null) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity(Map.of("error", "No existe una visita con id: " + id))
+                    .build();
+        }
+
+        if (rol.equalsIgnoreCase("VISITANTE")) {
+            if (username == null || username.trim().isEmpty()) {
+                return Response.status(Response.Status.UNAUTHORIZED)
+                        .entity(Map.of("error", "Usuario no identificado"))
+                        .build();
+            }
+
+            if (v.getVisitanteDni() == null || !v.getVisitanteDni().equalsIgnoreCase(username.trim())) {
+                return Response.status(Response.Status.FORBIDDEN)
+                        .entity(Map.of("error", "No puedes modificar una visita que no es tuya"))
+                        .build();
+            }
+        } else if (!rol.equalsIgnoreCase("ADMIN") && !rol.equalsIgnoreCase("GUARDIA")) {
+            return Response.status(Response.Status.FORBIDDEN)
+                    .entity(Map.of("error", "No autorizado"))
                     .build();
         }
 
@@ -197,6 +218,13 @@ public class VisitaResource {
 
             if (visitaUpdate.getVisitanteDni() != null
                     && !visitaUpdate.getVisitanteDni().trim().isEmpty()) {
+
+                if (rol.equalsIgnoreCase("VISITANTE")
+                        && !visitaUpdate.getVisitanteDni().trim().equalsIgnoreCase(username.trim())) {
+                    return Response.status(Response.Status.FORBIDDEN)
+                            .entity(Map.of("error", "No puedes cambiar el DNI de la visita a otro usuario"))
+                            .build();
+                }
 
                 Visitante visitante = em.createQuery(
                         "SELECT vt FROM Visitante vt WHERE vt.dniNie = :dni", Visitante.class)
