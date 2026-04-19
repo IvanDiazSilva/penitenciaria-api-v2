@@ -1,9 +1,11 @@
 package jwt;
 
 import jakarta.annotation.Priority;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -14,6 +16,9 @@ import java.io.IOException;
 @Priority(Priorities.AUTHENTICATION)
 public class JwtFilter implements ContainerRequestFilter {
 
+    @Context
+    private HttpServletRequest request;
+
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         String path = requestContext.getUriInfo().getPath();
@@ -23,9 +28,7 @@ public class JwtFilter implements ContainerRequestFilter {
             return;
         }
 
-        if ("login".equals(path) || path.endsWith("/login")
-                || "visitantes/preregistro".equals(path)
-                || path.endsWith("/visitantes/preregistro")) {
+        if (esRutaPublica(path)) {
             return;
         }
 
@@ -60,5 +63,23 @@ public class JwtFilter implements ContainerRequestFilter {
 
         requestContext.setProperty("username", username);
         requestContext.setProperty("rol", rol);
+
+        request.setAttribute("username", username);
+        request.setAttribute("rol", rol);
+    }
+
+    private boolean esRutaPublica(String path) {
+        if (path == null || path.trim().isEmpty()) {
+            return false;
+        }
+
+        String ruta = path.trim().toLowerCase();
+
+        return ruta.equals("login")
+                || ruta.endsWith("/login")
+                || ruta.equals("visitantes/preregistro")
+                || ruta.endsWith("/visitantes/preregistro")
+                || ruta.startsWith("visitantes/estado/")
+                || ruta.contains("/visitantes/estado/");
     }
 }

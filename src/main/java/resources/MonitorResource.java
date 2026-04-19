@@ -11,6 +11,10 @@ import jakarta.ws.rs.core.Response;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+import java.io.ByteArrayOutputStream;
+import com.lowagie.text.Document;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.pdf.PdfWriter;
 
 @Path("/monitor")
 @RequestScoped
@@ -57,6 +61,82 @@ public class MonitorResource {
         stats.put("autorizados", autorizados);  // ← autorizados
 
         return Response.ok(stats).build();
+    }
+
+    @GET
+    @Path("/informe")
+    public Response informe(@Context HttpServletRequest req) {
+        if (!autorizado(req)) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("mensaje", "No autorizado");
+            return Response.status(Response.Status.FORBIDDEN).entity(error).build();
+        }
+
+        LocalDate hoy = LocalDate.now();
+
+        Long reos = em.createQuery("SELECT COUNT(r) FROM Reo r", Long.class).getSingleResult();
+        Long visitas = em.createQuery("SELECT COUNT(v) FROM Visita v", Long.class).getSingleResult();
+        Long incidentes = em.createQuery("SELECT COUNT(i) FROM Incidente i", Long.class).getSingleResult();
+        Long visitasHoy = em.createQuery("SELECT COUNT(v) FROM Visita v WHERE v.fechaVisita = :hoy", Long.class)
+                .setParameter("hoy", hoy)
+                .getSingleResult();
+
+        Map<String, Object> informe = new HashMap<>();
+        informe.put("mensaje", "Informe generado correctamente");
+        informe.put("fecha", hoy.toString());
+        informe.put("reoTotal", reos);
+        informe.put("visitasTotal", visitas);
+        informe.put("incidentesTotal", incidentes);
+        informe.put("visitasHoy", visitasHoy);
+
+        return Response.ok(informe).build();
+    }
+
+    @GET
+    @Path("/informe/pdf")
+    @Produces("application/pdf")
+    public Response descargarInformePdf(@Context HttpServletRequest req) {
+        if (!autorizado(req)) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("mensaje", "No autorizado");
+            return Response.status(Response.Status.FORBIDDEN).entity(error).build();
+        }
+
+        try {
+            LocalDate hoy = LocalDate.now();
+
+            Long reos = em.createQuery("SELECT COUNT(r) FROM Reo r", Long.class).getSingleResult();
+            Long visitas = em.createQuery("SELECT COUNT(v) FROM Visita v", Long.class).getSingleResult();
+            Long incidentes = em.createQuery("SELECT COUNT(i) FROM Incidente i", Long.class).getSingleResult();
+            Long visitasHoy = em.createQuery("SELECT COUNT(v) FROM Visita v WHERE v.fechaVisita = :hoy", Long.class)
+                    .setParameter("hoy", hoy)
+                    .getSingleResult();
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+            Document document = new Document();
+            PdfWriter.getInstance(document, baos);
+
+            document.open();
+            document.add(new Paragraph("Informe del sistema penitenciario"));
+            document.add(new Paragraph("Fecha: " + hoy));
+            document.add(new Paragraph(" "));
+            document.add(new Paragraph("Total de reclusos: " + reos));
+            document.add(new Paragraph("Total de visitas: " + visitas));
+            document.add(new Paragraph("Visitas de hoy: " + visitasHoy));
+            document.add(new Paragraph("Total de incidentes: " + incidentes));
+            document.close();
+
+            return Response.ok(baos.toByteArray())
+                    .header("Content-Disposition", "attachment; filename=informe-penitenciaria.pdf")
+                    .build();
+
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("mensaje", "Error al generar el PDF");
+            error.put("detalle", e.getMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(error).build();
+        }
     }
 
 }

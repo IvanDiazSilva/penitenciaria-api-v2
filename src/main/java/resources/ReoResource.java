@@ -10,7 +10,9 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Path("/reos")
 @Produces(MediaType.APPLICATION_JSON)
@@ -30,51 +32,92 @@ public class ReoResource {
     @Path("/{id}")
     public Response getReo(@PathParam("id") Long id) {
         Reo reo = em.find(Reo.class, id);
-        return reo != null ? Response.ok(reo).build() : Response.status(404).build();
+
+        if (reo == null) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("mensaje", "No existe un recluso con ese id");
+            return Response.status(Response.Status.NOT_FOUND).entity(error).build();
+        }
+
+        return Response.ok(reo).build();
     }
 
     @POST
     @Transactional
-    public Response crearReo(Reo reo) {
+    public Response crearReo(Reo reo, @Context HttpServletRequest req) {
+        if (!autorizadoReos(req)) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("mensaje", "No autorizado");
+            return Response.status(Response.Status.FORBIDDEN).entity(error).build();
+        }
+
         em.persist(reo);
-        return Response.status(201).entity(reo).build();
+        em.flush();
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("mensaje", "Recluso creado correctamente");
+        response.put("reo", reo);
+
+        return Response.status(Response.Status.CREATED).entity(response).build();
     }
 
     @PUT
     @Path("/{id}")
     @Transactional
-    public Response actualizarReo(@PathParam("id") Long id, Reo reoUpdate) {
+    public Response actualizarReo(@PathParam("id") Long id, Reo reoUpdate, @Context HttpServletRequest req) {
+        if (!autorizadoReos(req)) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("mensaje", "No autorizado");
+            return Response.status(Response.Status.FORBIDDEN).entity(error).build();
+        }
+
         Reo reo = em.find(Reo.class, id);
         if (reo == null) {
-            return Response.status(404).build();
+            Map<String, Object> error = new HashMap<>();
+            error.put("mensaje", "No existe un recluso con ese id");
+            return Response.status(Response.Status.NOT_FOUND).entity(error).build();
         }
+
         reo.setNombre(reoUpdate.getNombre());
         reo.setDni(reoUpdate.getDni());
         reo.setDelito(reoUpdate.getDelito());
         em.merge(reo);
-        return Response.ok(reo).build();
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("mensaje", "Recluso actualizado correctamente");
+        response.put("reo", reo);
+
+        return Response.ok(response).build();
     }
 
     @DELETE
     @Path("/{id}")
     @Transactional
-    public Response eliminarReo(@PathParam("id") Long id,
-            @Context HttpServletRequest req) {  // ← AÑADE ESTO
+    public Response eliminarReo(@PathParam("id") Long id, @Context HttpServletRequest req) {
         if (!autorizadoReos(req)) {
-            return Response.status(403).build();  // ← AÑADE ESTO
+            Map<String, Object> error = new HashMap<>();
+            error.put("mensaje", "No autorizado");
+            return Response.status(Response.Status.FORBIDDEN).entity(error).build();
         }
+
         Reo reo = em.find(Reo.class, id);
         if (reo == null) {
-            return Response.status(404).build();
+            Map<String, Object> error = new HashMap<>();
+            error.put("mensaje", "No existe un recluso con ese id");
+            return Response.status(Response.Status.NOT_FOUND).entity(error).build();
         }
+
         em.remove(reo);
-        return Response.ok().build();
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("mensaje", "Recluso eliminado correctamente");
+        response.put("id", id);
+
+        return Response.ok(response).build();
     }
 
-// Y AÑADE este método (1 vez)
-    private boolean autorizadoReos(@Context HttpServletRequest req) {
+    private boolean autorizadoReos(HttpServletRequest req) {
         String rol = (String) req.getAttribute("rol");
         return rol != null && rol.equalsIgnoreCase("ADMIN");
     }
-
 }

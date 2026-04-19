@@ -16,6 +16,7 @@ import java.util.Map;
 import jwt.JwtUtil;
 import model.Usuario;
 import model.Visitante;
+import org.mindrot.jbcrypt.BCrypt;
 
 @Path("/login")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -49,7 +50,19 @@ public class LoginResource {
 
             Usuario usuario = query.getSingleResult();
 
-            if (!usuario.getPassword().equals(password)) {
+            String passwordGuardada = usuario.getPassword();
+            boolean passwordValida = false;
+
+            if (passwordGuardada != null
+                    && (passwordGuardada.startsWith("$2a$")
+                    || passwordGuardada.startsWith("$2b$")
+                    || passwordGuardada.startsWith("$2y$"))) {
+                passwordValida = BCrypt.checkpw(password, passwordGuardada);
+            } else {
+                passwordValida = passwordGuardada != null && passwordGuardada.equals(password);
+            }
+
+            if (!passwordValida) {
                 return Response.status(Response.Status.UNAUTHORIZED)
                         .entity(Map.of("mensaje", "Credenciales incorrectas"))
                         .build();
@@ -88,6 +101,7 @@ public class LoginResource {
                     .entity(Map.of("mensaje", "Credenciales incorrectas"))
                     .build();
         } catch (Exception e) {
+            e.printStackTrace();
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(Map.of("mensaje", "Error interno en login"))
                     .build();
