@@ -68,13 +68,18 @@ public class VisitaResource {
         }
 
         List<Visita> citas = em.createQuery(
-                "SELECT v FROM Visita v LEFT JOIN FETCH v.reo "
-                + "WHERE v.visitanteDni = :dni ORDER BY v.fechaVisita DESC",
+                "SELECT DISTINCT v FROM Visita v "
+                + "LEFT JOIN FETCH v.reo "
+                + "LEFT JOIN FETCH v.visitante "
+                + "JOIN v.visitante vt "
+                + "JOIN vt.usuario u "
+                + "WHERE u.username = :username "
+                + "ORDER BY v.fechaVisita DESC",
                 Visita.class)
-                .setParameter("dni", username.trim())
+                .setParameter("username", username.trim())
                 .getResultList();
 
-        LOG.info("GET /api/visitas/mis-citas para DNI=" + username + ": " + citas.size() + " citas");
+        LOG.info("GET /api/visitas/mis-citas para username=" + username + ": " + citas.size() + " citas");
         return Response.ok(citas).build();
     }
 
@@ -110,29 +115,9 @@ public class VisitaResource {
                         .build();
             }
 
-            Reo reo = em.find(Reo.class, visita.getReo().getId());
-            if (reo == null) {
+            if (visita.getVisitante() == null || visita.getVisitante().getId() == null) {
                 return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(Map.of("error", "No existe un reo con id: " + visita.getReo().getId()))
-                        .build();
-            }
-
-            if (visita.getVisitanteDni() == null || visita.getVisitanteDni().trim().isEmpty()) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(Map.of("error", "El visitanteDni es obligatorio"))
-                        .build();
-            }
-
-            Visitante visitante = em.createQuery(
-                    "SELECT v FROM Visitante v WHERE v.dniNie = :dni", Visitante.class)
-                    .setParameter("dni", visita.getVisitanteDni().trim())
-                    .getResultStream()
-                    .findFirst()
-                    .orElse(null);
-
-            if (visitante == null) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(Map.of("error", "No existe un visitante registrado con DNI/NIE: " + visita.getVisitanteDni()))
+                        .entity(Map.of("error", "El visitante es obligatorio"))
                         .build();
             }
 
@@ -142,12 +127,22 @@ public class VisitaResource {
                         .build();
             }
 
-            if (visita.getVisitanteNombre() == null || visita.getVisitanteNombre().trim().isEmpty()) {
-                visita.setVisitanteNombre(visitante.getNombreCompleto());
+            Reo reo = em.find(Reo.class, visita.getReo().getId());
+            if (reo == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", "No existe un reo con id: " + visita.getReo().getId()))
+                        .build();
             }
 
-            visita.setVisitanteDni(visita.getVisitanteDni().trim());
+            Visitante visitante = em.find(Visitante.class, visita.getVisitante().getId());
+            if (visitante == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", "No existe un visitante con id: " + visita.getVisitante().getId()))
+                        .build();
+            }
+
             visita.setReo(reo);
+            visita.setVisitante(visitante);
 
             if (visita.getAutorizado() == null) {
                 visita.setAutorizado(true);
@@ -193,7 +188,12 @@ public class VisitaResource {
                         .build();
             }
 
-            if (v.getVisitanteDni() == null || !v.getVisitanteDni().equalsIgnoreCase(username.trim())) {
+            String ownerUsername = v.getVisitante() != null
+                    && v.getVisitante().getUsuario() != null
+                    ? v.getVisitante().getUsuario().getUsername()
+                    : null;
+
+            if (ownerUsername == null || !ownerUsername.equalsIgnoreCase(username.trim())) {
                 return Response.status(Response.Status.FORBIDDEN)
                         .entity(Map.of("error", "No puedes modificar una visita que no es tuya"))
                         .build();
@@ -209,42 +209,6 @@ public class VisitaResource {
                 return Response.status(Response.Status.BAD_REQUEST)
                         .entity(Map.of("error", "Los datos de la visita son obligatorios"))
                         .build();
-            }
-
-            if (visitaUpdate.getVisitanteNombre() != null
-                    && !visitaUpdate.getVisitanteNombre().trim().isEmpty()) {
-                v.setVisitanteNombre(visitaUpdate.getVisitanteNombre().trim());
-            }
-
-            if (visitaUpdate.getVisitanteDni() != null
-                    && !visitaUpdate.getVisitanteDni().trim().isEmpty()) {
-
-                if (rol.equalsIgnoreCase("VISITANTE")
-                        && !visitaUpdate.getVisitanteDni().trim().equalsIgnoreCase(username.trim())) {
-                    return Response.status(Response.Status.FORBIDDEN)
-                            .entity(Map.of("error", "No puedes cambiar el DNI de la visita a otro usuario"))
-                            .build();
-                }
-
-                Visitante visitante = em.createQuery(
-                        "SELECT vt FROM Visitante vt WHERE vt.dniNie = :dni", Visitante.class)
-                        .setParameter("dni", visitaUpdate.getVisitanteDni().trim())
-                        .getResultStream()
-                        .findFirst()
-                        .orElse(null);
-
-                if (visitante == null) {
-                    return Response.status(Response.Status.BAD_REQUEST)
-                            .entity(Map.of("error", "No existe un visitante registrado con DNI/NIE: " + visitaUpdate.getVisitanteDni()))
-                            .build();
-                }
-
-                v.setVisitanteDni(visitaUpdate.getVisitanteDni().trim());
-
-                if (visitaUpdate.getVisitanteNombre() == null
-                        || visitaUpdate.getVisitanteNombre().trim().isEmpty()) {
-                    v.setVisitanteNombre(visitante.getNombreCompleto());
-                }
             }
 
             if (visitaUpdate.getFechaVisita() != null) {
@@ -278,6 +242,27 @@ public class VisitaResource {
                 }
 
                 v.setReo(reo);
+            }
+
+            if (visitaUpdate.getVisitante() != null && visitaUpdate.getVisitante().getId() != null) {
+                Visitante visitante = em.find(Visitante.class, visitaUpdate.getVisitante().getId());
+
+                if (visitante == null) {
+                    return Response.status(Response.Status.BAD_REQUEST)
+                            .entity(Map.of("error", "No existe un visitante con id: " + visitaUpdate.getVisitante().getId()))
+                            .build();
+                }
+
+                if (rol.equalsIgnoreCase("VISITANTE")) {
+                    String ownerUsername = visitante.getUsuario() != null ? visitante.getUsuario().getUsername() : null;
+                    if (ownerUsername == null || !ownerUsername.equalsIgnoreCase(username.trim())) {
+                        return Response.status(Response.Status.FORBIDDEN)
+                                .entity(Map.of("error", "No puedes reasignar la visita a otro visitante"))
+                                .build();
+                    }
+                }
+
+                v.setVisitante(visitante);
             }
 
             em.flush();
@@ -339,7 +324,12 @@ public class VisitaResource {
                         .build();
             }
 
-            if (v.getVisitanteDni() == null || !v.getVisitanteDni().equalsIgnoreCase(username.trim())) {
+            String ownerUsername = v.getVisitante() != null
+                    && v.getVisitante().getUsuario() != null
+                    ? v.getVisitante().getUsuario().getUsername()
+                    : null;
+
+            if (ownerUsername == null || !ownerUsername.equalsIgnoreCase(username.trim())) {
                 return Response.status(Response.Status.FORBIDDEN)
                         .entity(Map.of("error", "No puedes generar QR para una visita que no es tuya"))
                         .build();
@@ -385,7 +375,7 @@ public class VisitaResource {
         }
 
         List<Visita> visitas = em.createQuery(
-                "SELECT v FROM Visita v WHERE v.codigoQr = :qr", Visita.class)
+                "SELECT v FROM Visita v LEFT JOIN FETCH v.visitante WHERE v.codigoQr = :qr", Visita.class)
                 .setParameter("qr", qrCode.trim())
                 .getResultList();
 
@@ -401,7 +391,7 @@ public class VisitaResource {
         if (Boolean.TRUE.equals(v.getAutorizado())) {
             return Response.ok(Map.of(
                     "valido", true,
-                    "visitante", v.getVisitanteNombre(),
+                    "visitante", v.getVisitante() != null ? v.getVisitante().getNombreCompleto() : null,
                     "mensaje", "QR validado correctamente"
             )).build();
         }

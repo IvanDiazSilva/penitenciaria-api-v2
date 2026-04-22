@@ -11,18 +11,17 @@ import java.time.LocalTime;
 public class Visita {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "visitas_seq")
+    @SequenceGenerator(name = "visitas_seq", sequenceName = "visitas_id_seq", allocationSize = 1)
     private Integer id;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "reo_id", nullable = false)
     private Reo reo;
 
-    @Column(name = "visitante_nombre", length = 100, nullable = false)
-    private String visitanteNombre;
-
-    @Column(name = "visitante_dni", length = 9, nullable = false)
-    private String visitanteDni;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "visitante_id", nullable = false)
+    private Visitante visitante;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Column(name = "fecha_visita", nullable = false)
@@ -42,11 +41,9 @@ public class Visita {
     @Column(name = "codigo_qr", length = 100)
     private String codigoQr;
 
-    // Constructores
     public Visita() {
     }
 
-    // Getters/Setters (NetBeans: Insert Code → Getter/Setter)
     public Integer getId() {
         return id;
     }
@@ -63,20 +60,12 @@ public class Visita {
         this.reo = reo;
     }
 
-    public String getVisitanteNombre() {
-        return visitanteNombre;
+    public Visitante getVisitante() {
+        return visitante;
     }
 
-    public void setVisitanteNombre(String visitanteNombre) {
-        this.visitanteNombre = visitanteNombre;
-    }
-
-    public String getVisitanteDni() {
-        return visitanteDni;
-    }
-
-    public void setVisitanteDni(String visitanteDni) {
-        this.visitanteDni = visitanteDni;
+    public void setVisitante(Visitante visitante) {
+        this.visitante = visitante;
     }
 
     public LocalDate getFechaVisita() {
@@ -118,5 +107,4 @@ public class Visita {
     public void setCodigoQr(String codigoQr) {
         this.codigoQr = codigoQr;
     }
-
 }

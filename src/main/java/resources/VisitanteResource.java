@@ -48,106 +48,105 @@ public class VisitanteResource {
     }
 
     @POST
-@Path("/preregistro")
-@Transactional
-public Response preregistro(PreregistroVisitanteRequest request) {
-    try {
-        if (request == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "No se han recibido datos del preregistro"))
+    @Path("/preregistro")
+    @Transactional
+    public Response preregistro(PreregistroVisitanteRequest request) {
+        try {
+            if (request == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", "No se han recibido datos del preregistro"))
+                        .build();
+            }
+
+            if (request.getNombreCompleto() == null || request.getNombreCompleto().trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", "El nombre completo es obligatorio"))
+                        .build();
+            }
+
+            if (request.getDniNie() == null || request.getDniNie().trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", "El DNI/NIE es obligatorio"))
+                        .build();
+            }
+
+            if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", "La contraseña es obligatoria"))
+                        .build();
+            }
+
+            String dniNie = request.getDniNie().trim().toUpperCase();
+
+            Long visitantesExistentes = em.createQuery(
+                    "SELECT COUNT(v) FROM Visitante v WHERE UPPER(v.dniNie) = :dniNie",
+                    Long.class
+            ).setParameter("dniNie", dniNie)
+                    .getSingleResult();
+
+            if (visitantesExistentes > 0) {
+                return Response.status(Response.Status.CONFLICT)
+                        .entity(Map.of("error", "Ya existe un visitante con ese DNI/NIE"))
+                        .build();
+            }
+
+            Long usuariosExistentes = em.createQuery(
+                    "SELECT COUNT(u) FROM Usuario u WHERE UPPER(u.username) = :username",
+                    Long.class
+            ).setParameter("username", dniNie)
+                    .getSingleResult();
+
+            if (usuariosExistentes > 0) {
+                return Response.status(Response.Status.CONFLICT)
+                        .entity(Map.of("error", "Ya existe un usuario con ese DNI/NIE"))
+                        .build();
+            }
+
+            String passwordPlano = request.getPassword().trim();
+            String passwordHash = BCrypt.hashpw(passwordPlano, BCrypt.gensalt(12));
+
+            Usuario usuario = new Usuario();
+            usuario.setUsername(dniNie);
+            usuario.setPassword(passwordHash);
+            usuario.setRol("VISITANTE");
+
+            em.persist(usuario);
+            em.flush();
+
+            Visitante visitante = new Visitante();
+            visitante.setNombreCompleto(request.getNombreCompleto().trim());
+            visitante.setDniNie(dniNie);
+            visitante.setNacionalidad(request.getNacionalidad() != null ? request.getNacionalidad().trim() : null);
+            visitante.setTelefono(request.getTelefono() != null ? request.getTelefono().trim() : null);
+            visitante.setEmail(request.getEmail() != null ? request.getEmail().trim() : null);
+            visitante.setDireccion(request.getDireccion() != null ? request.getDireccion().trim() : null);
+            visitante.setParentesco(request.getParentesco() != null ? request.getParentesco().trim() : null);
+            visitante.setAceptaNormativa(request.getAceptaNormativa());
+            visitante.setEstado("PENDIENTE");
+            visitante.setUsuario(usuario);
+
+            em.persist(visitante);
+            em.flush();
+            em.refresh(visitante);
+
+            LOG.info("Preregistro visitante creado con id=" + visitante.getId() + ", dniNie=" + visitante.getDniNie());
+
+            return Response.status(Response.Status.CREATED)
+                    .entity(Map.of(
+                            "mensaje", "Preregistro realizado correctamente. Pendiente de aprobación.",
+                            "id", visitante.getId(),
+                            "dniNie", visitante.getDniNie(),
+                            "estado", visitante.getEstado()
+                    ))
+                    .build();
+
+        } catch (Exception e) {
+            LOG.severe("Error POST /visitantes/preregistro: " + e.getClass().getName() + " - " + e.getMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(Map.of("error", "Error interno al realizar el preregistro"))
                     .build();
         }
-
-        if (request.getNombreCompleto() == null || request.getNombreCompleto().trim().isEmpty()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "El nombre completo es obligatorio"))
-                    .build();
-        }
-
-        if (request.getDniNie() == null || request.getDniNie().trim().isEmpty()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "El DNI/NIE es obligatorio"))
-                    .build();
-        }
-
-        if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "La contraseña es obligatoria"))
-                    .build();
-        }
-
-        String dniNie = request.getDniNie().trim().toUpperCase();
-
-        Long visitantesExistentes = em.createQuery(
-                "SELECT COUNT(v) FROM Visitante v WHERE UPPER(v.dniNie) = :dniNie",
-                Long.class
-        ).setParameter("dniNie", dniNie)
-                .getSingleResult();
-
-        if (visitantesExistentes > 0) {
-            return Response.status(Response.Status.CONFLICT)
-                    .entity(Map.of("error", "Ya existe un visitante con ese DNI/NIE"))
-                    .build();
-        }
-
-        Long usuariosExistentes = em.createQuery(
-                "SELECT COUNT(u) FROM Usuario u WHERE UPPER(u.username) = :username",
-                Long.class
-        ).setParameter("username", dniNie)
-                .getSingleResult();
-
-        if (usuariosExistentes > 0) {
-            return Response.status(Response.Status.CONFLICT)
-                    .entity(Map.of("error", "Ya existe un usuario con ese DNI/NIE"))
-                    .build();
-        }
-
-        String passwordPlano = request.getPassword().trim();
-        String passwordHash = BCrypt.hashpw(passwordPlano, BCrypt.gensalt(12));
-
-        Usuario usuario = new Usuario();
-        usuario.setUsername(dniNie);
-        usuario.setPassword(passwordHash);
-        usuario.setRol("VISITANTE");
-
-        em.persist(usuario);
-        em.flush();
-
-        Visitante visitante = new Visitante();
-        visitante.setNombreCompleto(request.getNombreCompleto().trim());
-        visitante.setDniNie(dniNie);
-        visitante.setNacionalidad(request.getNacionalidad() != null ? request.getNacionalidad().trim() : null);
-        visitante.setTelefono(request.getTelefono() != null ? request.getTelefono().trim() : null);
-        visitante.setEmail(request.getEmail() != null ? request.getEmail().trim() : null);
-        visitante.setDireccion(request.getDireccion() != null ? request.getDireccion().trim() : null);
-        visitante.setNombreInterno(request.getNombreInterno() != null ? request.getNombreInterno().trim() : null);
-        visitante.setParentesco(request.getParentesco() != null ? request.getParentesco().trim() : null);
-        visitante.setAceptaNormativa(request.getAceptaNormativa());
-        visitante.setEstado("PENDIENTE");
-        visitante.setUsuario(usuario);
-
-        em.persist(visitante);
-        em.flush();
-        em.refresh(visitante);
-
-        LOG.info("Preregistro visitante creado con id=" + visitante.getId() + ", dniNie=" + visitante.getDniNie());
-
-        return Response.status(Response.Status.CREATED)
-                .entity(Map.of(
-                        "mensaje", "Preregistro realizado correctamente. Pendiente de aprobación.",
-                        "id", visitante.getId(),
-                        "dniNie", visitante.getDniNie(),
-                        "estado", visitante.getEstado()
-                ))
-                .build();
-
-    } catch (Exception e) {
-        LOG.severe("Error POST /visitantes/preregistro: " + e.getClass().getName() + " - " + e.getMessage());
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(Map.of("error", "Error interno al realizar el preregistro"))
-                .build();
     }
-}
 
     @POST
     @Transactional
@@ -188,10 +187,6 @@ public Response preregistro(PreregistroVisitanteRequest request) {
 
             if (visitante.getDireccion() != null) {
                 visitante.setDireccion(visitante.getDireccion().trim());
-            }
-
-            if (visitante.getNombreInterno() != null) {
-                visitante.setNombreInterno(visitante.getNombreInterno().trim());
             }
 
             if (visitante.getParentesco() != null) {
@@ -256,7 +251,7 @@ public Response preregistro(PreregistroVisitanteRequest request) {
 
     @GET
     @Path("{id}")
-    public Response getById(@PathParam("id") Long id) {
+    public Response getById(@PathParam("id") Integer id) {
         if (!tieneRol("ADMIN", "GUARDIA")) {
             return Response.status(Response.Status.FORBIDDEN)
                     .entity(Map.of("error", "No autorizado"))
@@ -312,7 +307,7 @@ public Response preregistro(PreregistroVisitanteRequest request) {
     @PUT
     @Path("{id}/estado")
     @Transactional
-    public Response actualizarEstado(@PathParam("id") Long id, Map<String, String> body) {
+    public Response actualizarEstado(@PathParam("id") Integer id, Map<String, String> body) {
         if (!tieneRol("ADMIN")) {
             return Response.status(Response.Status.FORBIDDEN)
                     .entity(Map.of("error", "No autorizado"))
@@ -336,9 +331,9 @@ public Response preregistro(PreregistroVisitanteRequest request) {
 
         if (!nuevoEstado.equals("PENDIENTE")
                 && !nuevoEstado.equals("APROBADO")
-                && !nuevoEstado.equals("RECHAZADO")) {
+                && !nuevoEstado.equals("DENEGADO")) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Estado no válido. Usa PENDIENTE, APROBADO o RECHAZADO"))
+                    .entity(Map.of("error", "Estado no válido. Usa PENDIENTE, APROBADO o DENEGADO"))
                     .build();
         }
 

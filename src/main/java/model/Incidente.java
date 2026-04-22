@@ -1,40 +1,47 @@
 package model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import jakarta.xml.bind.annotation.XmlRootElement;
+import java.io.Serializable;
+import java.time.LocalDateTime;
 
 @XmlRootElement
 @Entity
 @Table(name = "incidentes")
-public class Incidente {
+public class Incidente implements Serializable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "incidentes_seq")
+    @SequenceGenerator(name = "incidentes_seq", sequenceName = "incidentes_id_seq", allocationSize = 1)
+    private Integer id;
 
     @Column(nullable = false, length = 100)
-    private String tipo;          // Ej: pelea, fuga, robo
+    private String tipo;
 
-    @Column(nullable = false, length = 500)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String descripcion;
 
-    @Column(name = "id_guardia", nullable = false)
-    private Long idGuardia;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_guardia", nullable = false)
+    private Usuario guardia;
 
-    @Column(name = "fecha_hora", nullable = false, length = 20)
-    private String fechaHora;     // "2026-02-25 22:30"
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @Column(name = "fecha_hora", nullable = false)
+    private LocalDateTime fechaHora;
 
-    @Column(name = "id_reo")
-    private Long idReo;           // Opcional: incidente asociado a un reo
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_reo")
+    private Reo reo;
 
     public Incidente() {
     }
 
-    public Long getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -54,27 +61,27 @@ public class Incidente {
         this.descripcion = descripcion;
     }
 
-    public Long getIdGuardia() {
-        return idGuardia;
+    public Usuario getGuardia() {
+        return guardia;
     }
 
-    public void setIdGuardia(Long idGuardia) {
-        this.idGuardia = idGuardia;
+    public void setGuardia(Usuario guardia) {
+        this.guardia = guardia;
     }
 
-    public String getFechaHora() {
+    public LocalDateTime getFechaHora() {
         return fechaHora;
     }
 
-    public void setFechaHora(String fechaHora) {
+    public void setFechaHora(LocalDateTime fechaHora) {
         this.fechaHora = fechaHora;
     }
 
-    public Long getIdReo() {
-        return idReo;
+    public Reo getReo() {
+        return reo;
     }
 
-    public void setIdReo(Long idReo) {
-        this.idReo = idReo;
+    public void setReo(Reo reo) {
+        this.reo = reo;
     }
 }

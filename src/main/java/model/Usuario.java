@@ -1,9 +1,11 @@
 package model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.xml.bind.annotation.XmlRootElement;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 @XmlRootElement
 @Entity
@@ -11,8 +13,9 @@ import java.io.Serializable;
 public class Usuario implements Serializable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "usuarios_seq")
+    @SequenceGenerator(name = "usuarios_seq", sequenceName = "usuarios_id_seq", allocationSize = 1)
+    private Integer id;
 
     @Column(unique = true, nullable = false, length = 50)
     private String username;
@@ -22,11 +25,15 @@ public class Usuario implements Serializable {
     private String password;
 
     @Column(nullable = false, length = 20)
-    private String rol;  // ADMIN, GUARDA, CONSULTOR, VISITANTE
+    private String rol;
 
     @OneToOne(mappedBy = "usuario", fetch = FetchType.LAZY)
     @JsonIgnore
     private Visitante visitante;
+
+    @OneToMany(mappedBy = "guardia", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<Incidente> incidentesRegistrados = new ArrayList<>();
 
     public Usuario() {
     }
@@ -37,11 +44,11 @@ public class Usuario implements Serializable {
         this.rol = rol;
     }
 
-    public Long getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -75,5 +82,13 @@ public class Usuario implements Serializable {
 
     public void setVisitante(Visitante visitante) {
         this.visitante = visitante;
+    }
+
+    public List<Incidente> getIncidentesRegistrados() {
+        return incidentesRegistrados;
+    }
+
+    public void setIncidentesRegistrados(List<Incidente> incidentesRegistrados) {
+        this.incidentesRegistrados = incidentesRegistrados;
     }
 }

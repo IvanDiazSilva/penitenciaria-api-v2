@@ -17,40 +17,81 @@ public class PreregistroVisitanteRequest {
     private String telefono;
     private String email;
     private String direccion;
-    private String nombreInterno;
     private String parentesco;
     private Boolean aceptaNormativa;
 
     public PreregistroVisitanteRequest() {
     }
 
-    public String getNombreCompleto() { return nombreCompleto; }
-    public void setNombreCompleto(String nombreCompleto) { this.nombreCompleto = nombreCompleto; }
+    public String getNombreCompleto() {
+        return nombreCompleto;
+    }
 
-    public String getDniNie() { return dniNie; }
-    public void setDniNie(String dniNie) { this.dniNie = dniNie; }
+    public void setNombreCompleto(String nombreCompleto) {
+        this.nombreCompleto = nombreCompleto;
+    }
 
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
+    public String getDniNie() {
+        return dniNie;
+    }
 
-    public String getNacionalidad() { return nacionalidad; }
-    public void setNacionalidad(String nacionalidad) { this.nacionalidad = nacionalidad; }
+    public void setDniNie(String dniNie) {
+        this.dniNie = dniNie;
+    }
 
-    public String getTelefono() { return telefono; }
-    public void setTelefono(String telefono) { this.telefono = telefono; }
+    public String getPassword() {
+        return password;
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public void setPassword(String password) {
+        this.password = password;
+    }
 
-    public String getDireccion() { return direccion; }
-    public void setDireccion(String direccion) { this.direccion = direccion; }
+    public String getNacionalidad() {
+        return nacionalidad;
+    }
 
-    public String getNombreInterno() { return nombreInterno; }
-    public void setNombreInterno(String nombreInterno) { this.nombreInterno = nombreInterno; }
+    public void setNacionalidad(String nacionalidad) {
+        this.nacionalidad = nacionalidad;
+    }
 
-    public String getParentesco() { return parentesco; }
-    public void setParentesco(String parentesco) { this.parentesco = parentesco; }
+    public String getTelefono() {
+        return telefono;
+    }
 
-    public Boolean getAceptaNormativa() { return aceptaNormativa; }
-    public void setAceptaNormativa(Boolean aceptaNormativa) { this.aceptaNormativa = aceptaNormativa; }
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getDireccion() {
+        return direccion;
+    }
+
+    public void setDireccion(String direccion) {
+        this.direccion = direccion;
+    }
+
+    public String getParentesco() {
+        return parentesco;
+    }
+
+    public void setParentesco(String parentesco) {
+        this.parentesco = parentesco;
+    }
+
+    public Boolean getAceptaNormativa() {
+        return aceptaNormativa;
+    }
+
+    public void setAceptaNormativa(Boolean aceptaNormativa) {
+        this.aceptaNormativa = aceptaNormativa;
+    }
 }

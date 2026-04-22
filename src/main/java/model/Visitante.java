@@ -5,14 +5,17 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "visitantes")
 public class Visitante implements Serializable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "visitantes_seq")
+    @SequenceGenerator(name = "visitantes_seq", sequenceName = "visitantes_id_seq", allocationSize = 1)
+    private Integer id;
 
     @Column(name = "nombre_completo", nullable = false, length = 255)
     private String nombreCompleto;
@@ -32,14 +35,11 @@ public class Visitante implements Serializable {
     @Column(columnDefinition = "TEXT")
     private String direccion;
 
-    @Column(name = "nombre_interno", length = 255)
-    private String nombreInterno;
-
     @Column(length = 100)
     private String parentesco;
 
     @Column(name = "acepta_normativa")
-    private Boolean aceptaNormativa;
+    private Boolean aceptaNormativa = true;
 
     @Column(length = 20, nullable = false)
     private String estado = "PENDIENTE";
@@ -53,14 +53,23 @@ public class Visitante implements Serializable {
     @JsonIgnore
     private Usuario usuario;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reo_id")
+    @JsonIgnore
+    private Reo reo;
+
+    @OneToMany(mappedBy = "visitante", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<Visita> visitas = new ArrayList<>();
+
     public Visitante() {
     }
 
-    public Long getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -112,14 +121,6 @@ public class Visitante implements Serializable {
         this.direccion = direccion;
     }
 
-    public String getNombreInterno() {
-        return nombreInterno;
-    }
-
-    public void setNombreInterno(String nombreInterno) {
-        this.nombreInterno = nombreInterno;
-    }
-
     public String getParentesco() {
         return parentesco;
     }
@@ -158,5 +159,21 @@ public class Visitante implements Serializable {
 
     public void setUsuario(Usuario usuario) {
         this.usuario = usuario;
+    }
+
+    public Reo getReo() {
+        return reo;
+    }
+
+    public void setReo(Reo reo) {
+        this.reo = reo;
+    }
+
+    public List<Visita> getVisitas() {
+        return visitas;
+    }
+
+    public void setVisitas(List<Visita> visitas) {
+        this.visitas = visitas;
     }
 }
