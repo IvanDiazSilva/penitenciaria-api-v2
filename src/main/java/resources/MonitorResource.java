@@ -17,6 +17,13 @@ import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+import com.lowagie.text.Font;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.Phrase;
+import com.lowagie.text.Element;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import java.awt.Color;
 
 @Path("/monitor")
 @RequestScoped
@@ -136,13 +143,66 @@ public class MonitorResource {
             PdfWriter.getInstance(document, baos);
 
             document.open();
-            document.add(new Paragraph("Informe del sistema penitenciario"));
-            document.add(new Paragraph("Fecha: " + hoy));
-            document.add(new Paragraph(" "));
-            document.add(new Paragraph("Total de reclusos: " + totalReos()));
-            document.add(new Paragraph("Total de visitas: " + totalVisitas()));
-            document.add(new Paragraph("Visitas de hoy: " + totalVisitasHoy(hoy)));
-            document.add(new Paragraph("Total de incidentes: " + totalIncidentes()));
+
+            Font tituloFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18, Color.BLACK);
+            Font subtituloFont = FontFactory.getFont(FontFactory.HELVETICA, 11, Color.DARK_GRAY);
+            Font cabeceraFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, Color.WHITE);
+            Font celdaFont = FontFactory.getFont(FontFactory.HELVETICA, 11, Color.BLACK);
+
+            Paragraph titulo = new Paragraph("Informe del sistema penitenciario", tituloFont);
+            titulo.setAlignment(Element.ALIGN_CENTER);
+            titulo.setSpacingAfter(10f);
+            document.add(titulo);
+
+            Paragraph fecha = new Paragraph("Fecha de generación: " + hoy, subtituloFont);
+            fecha.setAlignment(Element.ALIGN_CENTER);
+            fecha.setSpacingAfter(20f);
+            document.add(fecha);
+
+            Paragraph resumen = new Paragraph("Resumen general", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13));
+            resumen.setSpacingAfter(10f);
+            document.add(resumen);
+
+            PdfPTable tabla = new PdfPTable(2);
+            tabla.setWidthPercentage(100);
+            tabla.setSpacingBefore(10f);
+            tabla.setSpacingAfter(10f);
+            tabla.setWidths(new float[]{3f, 2f});
+
+            PdfPCell cabecera1 = new PdfPCell(new Phrase("Campo", cabeceraFont));
+            cabecera1.setBackgroundColor(new Color(52, 73, 94));
+            cabecera1.setHorizontalAlignment(Element.ALIGN_CENTER);
+            cabecera1.setPadding(8f);
+
+            PdfPCell cabecera2 = new PdfPCell(new Phrase("Valor", cabeceraFont));
+            cabecera2.setBackgroundColor(new Color(52, 73, 94));
+            cabecera2.setHorizontalAlignment(Element.ALIGN_CENTER);
+            cabecera2.setPadding(8f);
+
+            tabla.addCell(cabecera1);
+            tabla.addCell(cabecera2);
+
+            tabla.addCell(crearCelda("Total de reclusos", celdaFont));
+            tabla.addCell(crearCelda(String.valueOf(totalReos()), celdaFont));
+
+            tabla.addCell(crearCelda("Total de visitas", celdaFont));
+            tabla.addCell(crearCelda(String.valueOf(totalVisitas()), celdaFont));
+
+            tabla.addCell(crearCelda("Visitas de hoy", celdaFont));
+            tabla.addCell(crearCelda(String.valueOf(totalVisitasHoy(hoy)), celdaFont));
+
+            tabla.addCell(crearCelda("Total de incidentes", celdaFont));
+            tabla.addCell(crearCelda(String.valueOf(totalIncidentes()), celdaFont));
+
+            document.add(tabla);
+
+            Paragraph nota = new Paragraph(
+                    "Documento generado automáticamente por el módulo de monitor.",
+                    subtituloFont
+            );
+            nota.setSpacingBefore(10f);
+            document.add(nota);
+
             document.close();
 
             return Response.ok(baos.toByteArray(), "application/pdf")
@@ -155,5 +215,12 @@ public class MonitorResource {
             error.put("detalle", e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(error).build();
         }
+    }
+
+    private PdfPCell crearCelda(String texto, Font font) {
+        PdfPCell celda = new PdfPCell(new Phrase(texto, font));
+        celda.setPadding(8f);
+        celda.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        return celda;
     }
 }
