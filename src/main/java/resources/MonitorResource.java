@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -108,16 +109,28 @@ public class MonitorResource {
 
     @GET
     @Path("/informe")
-    public Response informe(@Context HttpServletRequest req) {
+    public Response informe(
+            @Context HttpServletRequest req,
+            @QueryParam("reoId") Long reoId,
+            @QueryParam("fechaDesde") String fechaDesde,
+            @QueryParam("fechaHasta") String fechaHasta) {
+
         if (!tieneAccesoMonitor(req)) {
             return forbidden();
         }
 
         LocalDate hoy = LocalDate.now();
 
+        System.out.println("Filtro informe -> reoId=" + reoId
+                + ", fechaDesde=" + fechaDesde
+                + ", fechaHasta=" + fechaHasta);
+
         Map<String, Object> informe = new HashMap<>();
         informe.put("mensaje", "Informe generado correctamente");
         informe.put("fecha", hoy.toString());
+        informe.put("reoIdFiltrado", reoId);
+        informe.put("fechaDesdeFiltrada", fechaDesde);
+        informe.put("fechaHastaFiltrada", fechaHasta);
         informe.put("reoTotal", totalReos());
         informe.put("visitasTotal", totalVisitas());
         informe.put("incidentesTotal", totalIncidentes());
@@ -129,13 +142,22 @@ public class MonitorResource {
     @GET
     @Path("/informe/pdf")
     @Produces("application/pdf")
-    public Response descargarInformePdf(@Context HttpServletRequest req) {
+    public Response descargarInformePdf(
+            @Context HttpServletRequest req,
+            @QueryParam("reoId") Long reoId,
+            @QueryParam("fechaDesde") String fechaDesde,
+            @QueryParam("fechaHasta") String fechaHasta) {
+
         if (!tieneAccesoMonitor(req)) {
             return forbidden();
         }
 
         try {
             LocalDate hoy = LocalDate.now();
+
+            System.out.println("Filtro PDF -> reoId=" + reoId
+                    + ", fechaDesde=" + fechaDesde
+                    + ", fechaHasta=" + fechaHasta);
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
@@ -193,6 +215,21 @@ public class MonitorResource {
 
             tabla.addCell(crearCelda("Total de incidentes", celdaFont));
             tabla.addCell(crearCelda(String.valueOf(totalIncidentes()), celdaFont));
+
+            if (reoId != null) {
+                tabla.addCell(crearCelda("Reo filtrado", celdaFont));
+                tabla.addCell(crearCelda(String.valueOf(reoId), celdaFont));
+            }
+
+            if (fechaDesde != null && !fechaDesde.isBlank()) {
+                tabla.addCell(crearCelda("Fecha desde", celdaFont));
+                tabla.addCell(crearCelda(fechaDesde, celdaFont));
+            }
+
+            if (fechaHasta != null && !fechaHasta.isBlank()) {
+                tabla.addCell(crearCelda("Fecha hasta", celdaFont));
+                tabla.addCell(crearCelda(fechaHasta, celdaFont));
+            }
 
             document.add(tabla);
 
