@@ -230,9 +230,9 @@ public class VisitanteResource {
     }
 
     @GET
-    public Response getAll() {
+    public Response getAll(@QueryParam("estado") String estado) {
         String rol = (String) req.getAttribute("rol");
-        LOG.info("GET /visitantes - rol recibido = " + rol);
+        LOG.info("GET /visitantes - rol recibido = " + rol + ", estado = " + estado);
 
         if (rol == null || (!rol.equalsIgnoreCase("ADMIN") && !rol.equalsIgnoreCase("GUARDIA"))) {
             return Response.status(Response.Status.FORBIDDEN)
@@ -240,10 +240,30 @@ public class VisitanteResource {
                     .build();
         }
 
-        List<Visitante> visitantes = em.createQuery(
-                "SELECT v FROM Visitante v ORDER BY v.fechaCreacion DESC",
-                Visitante.class
-        ).getResultList();
+        List<Visitante> visitantes;
+
+        if (estado != null && !estado.trim().isEmpty()) {
+            String estadoNormalizado = estado.trim().toUpperCase();
+
+            if (!estadoNormalizado.equals("PENDIENTE")
+                    && !estadoNormalizado.equals("APROBADO")
+                    && !estadoNormalizado.equals("DENEGADO")) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", "Estado no válido. Usa PENDIENTE, APROBADO o DENEGADO"))
+                        .build();
+            }
+
+            visitantes = em.createQuery(
+                    "SELECT v FROM Visitante v WHERE UPPER(v.estado) = :estado ORDER BY v.fechaCreacion DESC",
+                    Visitante.class
+            ).setParameter("estado", estadoNormalizado)
+                    .getResultList();
+        } else {
+            visitantes = em.createQuery(
+                    "SELECT v FROM Visitante v ORDER BY v.fechaCreacion DESC",
+                    Visitante.class
+            ).getResultList();
+        }
 
         LOG.info("GET /visitantes -> " + visitantes.size() + " visitantes");
         return Response.ok(visitantes).build();
@@ -340,6 +360,7 @@ public class VisitanteResource {
         visitante.setEstado(nuevoEstado);
         em.merge(visitante);
         em.flush();
+        em.refresh(visitante);
 
         LOG.info("Estado visitante id=" + id + " actualizado a " + nuevoEstado);
 
