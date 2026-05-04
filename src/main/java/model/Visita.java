@@ -3,6 +3,7 @@ package model;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
@@ -41,9 +42,18 @@ public class Visita {
     @Column(name = "codigo_qr", length = 100)
     private String codigoQr;
 
+    // --- CAMPOS PARA EL FLUJO QR ---
+    @Column(name = "validada")
+    private Boolean validada = false;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    @Column(name = "fecha_validacion")
+    private LocalDateTime fechaValidacion;
+
     public Visita() {
     }
 
+    // --- GETTERS Y SETTERS ---
     public Integer getId() {
         return id;
     }
@@ -106,5 +116,21 @@ public class Visita {
 
     public void setCodigoQr(String codigoQr) {
         this.codigoQr = codigoQr;
+    }
+
+    public Boolean getValidada() {
+        return validada;
+    }
+
+    public void setValidada(Boolean validada) {
+        this.validada = validada;
+    }
+
+    public LocalDateTime getFechaValidacion() {
+        return fechaValidacion;
+    }
+
+    public void setFechaValidacion(LocalDateTime fechaValidacion) {
+        this.fechaValidacion = fechaValidacion;
     }
 }

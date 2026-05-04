@@ -1,18 +1,10 @@
 package dto;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-
 public class CrearVisitaRequest {
-
     private Integer reoId;
-    private Integer visitanteId;
-    private LocalDate fechaVisita;
-    private LocalTime horaEntrada;
-    private LocalTime horaSalida;
-
-    public CrearVisitaRequest() {
-    }
+    private String fechaVisita;
+    private String horaEntrada;
+    private String horaSalida;
 
     public Integer getReoId() {
         return reoId;
@@ -22,35 +14,27 @@ public class CrearVisitaRequest {
         this.reoId = reoId;
     }
 
-    public Integer getVisitanteId() {
-        return visitanteId;
-    }
-
-    public void setVisitanteId(Integer visitanteId) {
-        this.visitanteId = visitanteId;
-    }
-
-    public LocalDate getFechaVisita() {
+    public String getFechaVisita() {
         return fechaVisita;
     }
 
-    public void setFechaVisita(LocalDate fechaVisita) {
+    public void setFechaVisita(String fechaVisita) {
         this.fechaVisita = fechaVisita;
     }
 
-    public LocalTime getHoraEntrada() {
+    public String getHoraEntrada() {
         return horaEntrada;
     }
 
-    public void setHoraEntrada(LocalTime horaEntrada) {
+    public void setHoraEntrada(String horaEntrada) {
         this.horaEntrada = horaEntrada;
     }
 
-    public LocalTime getHoraSalida() {
+    public String getHoraSalida() {
         return horaSalida;
     }
 
-    public void setHoraSalida(LocalTime horaSalida) {
+    public void setHoraSalida(String horaSalida) {
         this.horaSalida = horaSalida;
     }
 }

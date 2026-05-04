@@ -2,16 +2,22 @@ package resources;
 
 import dto.CrearVisitaRequest;
 import model.Reo;
+import model.Usuario;
 import model.Visita;
 import model.Visitante;
-import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -87,7 +93,16 @@ public class VisitaResource {
     @GET
     @Path("{id}")
     public Response getById(@PathParam("id") Integer id) {
-        Visita v = em.find(Visita.class, id);
+        Visita v = em.createQuery(
+                "SELECT v FROM Visita v "
+                + "LEFT JOIN FETCH v.reo "
+                + "LEFT JOIN FETCH v.visitante "
+                + "WHERE v.id = :id",
+                Visita.class)
+                .setParameter("id", id)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
 
         if (v == null) {
             return Response.status(Response.Status.NOT_FOUND)
@@ -100,38 +115,120 @@ public class VisitaResource {
 
     @POST
     @Transactional
-    public Response create(CrearVisitaRequest request) { // <-- Usamos el DTO
-        LOG.info("POST /api/visitas con DTO: " + request);
+    public Response create(CrearVisitaRequest request) {
+        LOG.info("POST /api/visitas con DTO");
+
+        String username = (String) req.getAttribute("username");
+        String rol = (String) req.getAttribute("rol");
+
+        if (rol == null || !rol.equalsIgnoreCase("VISITANTE")) {
+            return Response.status(Response.Status.FORBIDDEN)
+                    .entity(Map.of("error", "Solo los visitantes pueden solicitar visitas"))
+                    .build();
+        }
+
+        if (username == null || username.trim().isEmpty()) {
+            return Response.status(Response.Status.UNAUTHORIZED)
+                    .entity(Map.of("error", "Usuario no identificado"))
+                    .build();
+        }
 
         try {
-            // 1. Validar que los IDs existan
-            Reo reo = em.find(Reo.class, request.getReoId());
-            Visitante visitante = em.find(Visitante.class, request.getVisitanteId());
-
-            if (reo == null || visitante == null) {
+            if (request == null) {
                 return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(Map.of("error", "Reo o Visitante no existen"))
+                        .entity(Map.of("error", "El cuerpo de la petición es obligatorio"))
                         .build();
             }
 
-            // 2. Crear nueva entidad Visita
+            if (request.getReoId() == null || request.getReoId() <= 0) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", "El reo es obligatorio"))
+                        .build();
+            }
+
+            if (request.getFechaVisita() == null || request.getFechaVisita().trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", "La fecha de visita es obligatoria"))
+                        .build();
+            }
+
+            Usuario usuario = em.createQuery(
+                    "SELECT u FROM Usuario u WHERE u.username = :username",
+                    Usuario.class)
+                    .setParameter("username", username.trim())
+                    .getResultStream()
+                    .findFirst()
+                    .orElse(null);
+
+            if (usuario == null) {
+                return Response.status(Response.Status.UNAUTHORIZED)
+                        .entity(Map.of("error", "Usuario autenticado no encontrado"))
+                        .build();
+            }
+
+            Visitante visitante = em.createQuery(
+                    "SELECT v FROM Visitante v WHERE v.usuario.id = :usuarioId",
+                    Visitante.class)
+                    .setParameter("usuarioId", usuario.getId())
+                    .getResultStream()
+                    .findFirst()
+                    .orElse(null);
+
+            if (visitante == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", "No existe un visitante asociado al usuario autenticado"))
+                        .build();
+            }
+
+            Reo reo = em.find(Reo.class, request.getReoId());
+            if (reo == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", "El reo no existe"))
+                        .build();
+            }
+
             Visita nuevaVisita = new Visita();
             nuevaVisita.setReo(reo);
             nuevaVisita.setVisitante(visitante);
-            nuevaVisita.setFechaVisita(request.getFechaVisita());
-            nuevaVisita.setHoraEntrada(request.getHoraEntrada());
-            nuevaVisita.setHoraSalida(request.getHoraSalida());
-            nuevaVisita.setAutorizado(false); // Recomendación: que nazca no autorizada por defecto
-            nuevaVisita.setCodigoQr(null);    // Se genera después
+            nuevaVisita.setFechaVisita(LocalDate.parse(request.getFechaVisita()));
+            nuevaVisita.setHoraEntrada(
+                    request.getHoraEntrada() != null && !request.getHoraEntrada().isBlank()
+                    ? LocalTime.parse(request.getHoraEntrada())
+                    : null
+            );
+            nuevaVisita.setHoraSalida(
+                    request.getHoraSalida() != null && !request.getHoraSalida().isBlank()
+                    ? LocalTime.parse(request.getHoraSalida())
+                    : null
+            );
+            nuevaVisita.setAutorizado(false);
+            nuevaVisita.setCodigoQr(null);
 
             em.persist(nuevaVisita);
             em.flush();
 
-            return Response.status(Response.Status.CREATED).entity(nuevaVisita).build();
+            LOG.info("Visita creada correctamente. ID=" + nuevaVisita.getId()
+                    + ", username=" + username
+                    + ", visitanteId=" + visitante.getId()
+                    + ", reoId=" + reo.getId());
+
+            return Response.status(Response.Status.CREATED)
+                    .entity(Map.of(
+                            "mensaje", "Solicitud de visita creada correctamente",
+                            "id", nuevaVisita.getId(),
+                            "reoId", reo.getId(),
+                            "visitanteId", visitante.getId(),
+                            "fechaVisita", nuevaVisita.getFechaVisita().toString(),
+                            "horaEntrada", nuevaVisita.getHoraEntrada() != null ? nuevaVisita.getHoraEntrada().toString() : null,
+                            "horaSalida", nuevaVisita.getHoraSalida() != null ? nuevaVisita.getHoraSalida().toString() : null,
+                            "autorizado", nuevaVisita.getAutorizado()
+                    ))
+                    .build();
 
         } catch (Exception e) {
+            LOG.severe("Error POST visita: " + e.getMessage());
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", e.getMessage()))
+                    .entity(Map.of("error", "Error al crear la visita: " + e.getMessage()))
                     .build();
         }
     }
@@ -292,17 +389,20 @@ public class VisitaResource {
                     .build();
         }
 
+        if (!Boolean.TRUE.equals(v.getAutorizado())) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "La visita no está autorizada"))
+                    .build();
+        }
+
         if (rol.equalsIgnoreCase("VISITANTE")) {
             if (username == null || username.trim().isEmpty()) {
                 return Response.status(Response.Status.UNAUTHORIZED)
                         .entity(Map.of("error", "Usuario no identificado"))
                         .build();
             }
-
-            String ownerUsername = v.getVisitante() != null
-                    && v.getVisitante().getUsuario() != null
-                    ? v.getVisitante().getUsuario().getUsername()
-                    : null;
+            String ownerUsername = v.getVisitante() != null && v.getVisitante().getUsuario() != null
+                    ? v.getVisitante().getUsuario().getUsername() : null;
 
             if (ownerUsername == null || !ownerUsername.equalsIgnoreCase(username.trim())) {
                 return Response.status(Response.Status.FORBIDDEN)
@@ -311,13 +411,13 @@ public class VisitaResource {
             }
         }
 
-        String qrCode = QR_PREFIX + UUID.randomUUID().toString().substring(0, 8) + "_" + id;
+        String qrCode = "VISITA_" + UUID.randomUUID().toString().substring(0, 8) + "_" + id;
         v.setCodigoQr(qrCode);
+        v.setValidada(false); // Reset para permitir nueva validación
+        v.setFechaValidacion(null);
 
         em.merge(v);
         em.flush();
-
-        LOG.info("QR generado para visita " + id + " por usuario " + username + ": " + qrCode);
 
         return Response.ok(Map.of(
                 "mensaje", "QR generado correctamente",
@@ -330,22 +430,17 @@ public class VisitaResource {
     @Path("validar-qr")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.APPLICATION_JSON)
+    @Transactional // Asegúrate de tener esto para persistir el cambio de 'validada'
     public Response validarQR(@FormParam("qr") String qrCode) {
         if (!tieneRol("GUARDIA", "ADMIN")) {
             return Response.status(Response.Status.FORBIDDEN)
-                    .entity(Map.of(
-                            "valido", false,
-                            "mensaje", "Solo guardias o administradores pueden validar códigos QR"
-                    ))
+                    .entity(Map.of("valido", false, "mensaje", "No autorizado"))
                     .build();
         }
 
         if (qrCode == null || qrCode.trim().isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of(
-                            "valido", false,
-                            "mensaje", "El parámetro qr es obligatorio"
-                    ))
+                    .entity(Map.of("valido", false, "mensaje", "QR obligatorio"))
                     .build();
         }
 
@@ -355,25 +450,31 @@ public class VisitaResource {
                 .getResultList();
 
         if (visitas.isEmpty()) {
-            return Response.ok(Map.of(
-                    "valido", false,
-                    "mensaje", "QR no válido o no encontrado"
-            )).build();
+            return Response.ok(Map.of("valido", false, "mensaje", "QR no encontrado")).build();
         }
 
         Visita v = visitas.get(0);
 
-        if (Boolean.TRUE.equals(v.getAutorizado())) {
-            return Response.ok(Map.of(
-                    "valido", true,
-                    "visitante", v.getVisitante() != null ? v.getVisitante().getNombreCompleto() : null,
-                    "mensaje", "QR validado correctamente"
-            )).build();
+        if (!Boolean.TRUE.equals(v.getAutorizado())) {
+            return Response.ok(Map.of("valido", false, "mensaje", "Visita no autorizada")).build();
         }
 
+        // Comprobar si ya se validó
+        if (Boolean.TRUE.equals(v.getValidada())) {
+            return Response.ok(Map.of("valido", false, "mensaje", "El QR ya fue usado")).build();
+        }
+
+        // Marcar como validada
+        v.setValidada(true);
+        v.setFechaValidacion(LocalDateTime.now());
+
+        em.merge(v);
+        em.flush();
+
         return Response.ok(Map.of(
-                "valido", false,
-                "mensaje", "La visita existe, pero no está autorizada"
+                "valido", true,
+                "visitante", v.getVisitante() != null ? v.getVisitante().getNombreCompleto() : "Desconocido",
+                "mensaje", "Acceso concedido"
         )).build();
     }
 }
