@@ -1,5 +1,6 @@
 package resources;
 
+import dto.CrearVisitaRequest;
 import model.Reo;
 import model.Visita;
 import model.Visitante;
@@ -99,64 +100,38 @@ public class VisitaResource {
 
     @POST
     @Transactional
-    public Response create(Visita visita) {
-        LOG.info("POST /api/visitas: " + visita);
+    public Response create(CrearVisitaRequest request) { // <-- Usamos el DTO
+        LOG.info("POST /api/visitas con DTO: " + request);
 
         try {
-            if (visita == null) {
+            // 1. Validar que los IDs existan
+            Reo reo = em.find(Reo.class, request.getReoId());
+            Visitante visitante = em.find(Visitante.class, request.getVisitanteId());
+
+            if (reo == null || visitante == null) {
                 return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(Map.of("error", "La visita no puede ser nula"))
+                        .entity(Map.of("error", "Reo o Visitante no existen"))
                         .build();
             }
 
-            if (visita.getReo() == null || visita.getReo().getId() == null) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(Map.of("error", "El reo es obligatorio"))
-                        .build();
-            }
+            // 2. Crear nueva entidad Visita
+            Visita nuevaVisita = new Visita();
+            nuevaVisita.setReo(reo);
+            nuevaVisita.setVisitante(visitante);
+            nuevaVisita.setFechaVisita(request.getFechaVisita());
+            nuevaVisita.setHoraEntrada(request.getHoraEntrada());
+            nuevaVisita.setHoraSalida(request.getHoraSalida());
+            nuevaVisita.setAutorizado(false); // Recomendación: que nazca no autorizada por defecto
+            nuevaVisita.setCodigoQr(null);    // Se genera después
 
-            if (visita.getVisitante() == null || visita.getVisitante().getId() == null) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(Map.of("error", "El visitante es obligatorio"))
-                        .build();
-            }
-
-            if (visita.getFechaVisita() == null) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(Map.of("error", "La fechaVisita es obligatoria"))
-                        .build();
-            }
-
-            Reo reo = em.find(Reo.class, visita.getReo().getId());
-            if (reo == null) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(Map.of("error", "No existe un reo con id: " + visita.getReo().getId()))
-                        .build();
-            }
-
-            Visitante visitante = em.find(Visitante.class, visita.getVisitante().getId());
-            if (visitante == null) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(Map.of("error", "No existe un visitante con id: " + visita.getVisitante().getId()))
-                        .build();
-            }
-
-            visita.setReo(reo);
-            visita.setVisitante(visitante);
-
-            if (visita.getAutorizado() == null) {
-                visita.setAutorizado(true);
-            }
-
-            em.persist(visita);
+            em.persist(nuevaVisita);
             em.flush();
 
-            return Response.status(Response.Status.CREATED).entity(visita).build();
+            return Response.status(Response.Status.CREATED).entity(nuevaVisita).build();
 
         } catch (Exception e) {
-            LOG.severe("Error POST visita: " + e.getMessage());
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Error crear: " + e.getMessage()))
+                    .entity(Map.of("error", e.getMessage()))
                     .build();
         }
     }
