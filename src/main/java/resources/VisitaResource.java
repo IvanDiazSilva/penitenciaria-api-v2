@@ -91,6 +91,26 @@ public class VisitaResource {
     }
 
     @GET
+    public Response getAllVisitas() {
+        if (!tieneRol("ADMIN", "GUARDIA")) {
+            return Response.status(Response.Status.FORBIDDEN)
+                    .entity(Map.of("error", "No autorizado"))
+                    .build();
+        }
+
+        List<Visita> visitas = em.createQuery(
+                "SELECT DISTINCT v FROM Visita v "
+                + "LEFT JOIN FETCH v.reo "
+                + "LEFT JOIN FETCH v.visitante "
+                + "ORDER BY v.fechaVisita DESC, v.id DESC",
+                Visita.class)
+                .getResultList();
+
+        LOG.info("GET /api/visitas -> " + visitas.size() + " visitas");
+        return Response.ok(visitas).build();
+    }
+
+    @GET
     @Path("{id}")
     public Response getById(@PathParam("id") Integer id) {
         Visita v = em.createQuery(
