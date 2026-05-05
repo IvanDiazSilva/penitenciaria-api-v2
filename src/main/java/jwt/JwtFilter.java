@@ -9,7 +9,9 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
 import jakarta.ws.rs.ext.Provider;
+
 import java.io.IOException;
 
 @Provider
@@ -34,38 +36,64 @@ public class JwtFilter implements ContainerRequestFilter {
 
         String authHeader = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            requestContext.abortWith(
-                    Response.status(Response.Status.UNAUTHORIZED)
-                            .type(MediaType.APPLICATION_JSON)
-                            .entity("{\"error\":\"Falta cabecera Authorization\"}")
-                            .build()
-            );
+            abortar(requestContext, Response.Status.UNAUTHORIZED, "Falta cabecera Authorization");
             return;
         }
 
         String token = authHeader.substring("Bearer ".length()).trim();
 
+        if (token.isEmpty()) {
+            abortar(requestContext, Response.Status.UNAUTHORIZED, "Token vacío");
+            return;
+        }
+
         if (!JwtUtil.validarToken(token)) {
-            requestContext.abortWith(
-                    Response.status(Response.Status.UNAUTHORIZED)
-                            .type(MediaType.APPLICATION_JSON)
-                            .entity("{\"error\":\"Token inválido\"}")
-                            .build()
-            );
+            abortar(requestContext, Response.Status.UNAUTHORIZED, "Token inválido");
             return;
         }
 
         String username = JwtUtil.getUsername(token);
         String rol = JwtUtil.getRol(token);
 
-        System.out.println("JWT username = " + username);
-        System.out.println("JWT rol = " + rol);
+        if (username == null || username.trim().isEmpty()) {
+            abortar(requestContext, Response.Status.UNAUTHORIZED, "Token sin username válido");
+            return;
+        }
 
-        requestContext.setProperty("username", username);
-        requestContext.setProperty("rol", rol);
+        if (rol == null || rol.trim().isEmpty()) {
+            abortar(requestContext, Response.Status.UNAUTHORIZED, "Token sin rol válido");
+            return;
+        }
 
-        request.setAttribute("username", username);
-        request.setAttribute("rol", rol);
+        final SecurityContext currentSecurityContext = requestContext.getSecurityContext();
+
+        JwtSecurityContext jwtSecurityContext = new JwtSecurityContext(
+                username.trim(),
+                rol.trim(),
+                currentSecurityContext != null && currentSecurityContext.isSecure()
+        );
+
+        requestContext.setSecurityContext(jwtSecurityContext);
+
+        // Compatibilidad temporal con código antiguo
+        requestContext.setProperty("username", username.trim());
+        requestContext.setProperty("rol", rol.trim());
+
+        request.setAttribute("username", username.trim());
+        request.setAttribute("rol", rol.trim());
+    }
+
+    private void abortar(ContainerRequestContext requestContext, Response.Status status, String mensaje) {
+        requestContext.abortWith(
+                Response.status(status)
+                        .type(MediaType.APPLICATION_JSON)
+                        .entity("{\"error\":\"" + escaparJson(mensaje) + "\"}")
+                        .build()
+        );
+    }
+
+    private String escaparJson(String texto) {
+        return texto == null ? "" : texto.replace("\"", "\\\"");
     }
 
     private boolean esRutaPublica(String path) {

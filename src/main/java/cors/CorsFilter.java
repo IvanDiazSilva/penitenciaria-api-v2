@@ -26,7 +26,7 @@ public class CorsFilter implements ContainerRequestFilter, ContainerResponseFilt
                 Response.ok()
                     .header("Access-Control-Allow-Origin", ALLOWED_ORIGIN)
                     .header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Requested-With")
-                    .header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD")
+                    .header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD")
                     .header("Access-Control-Allow-Credentials", "true")
                     .header("Access-Control-Max-Age", "86400")
                     .build()
@@ -40,7 +40,7 @@ public class CorsFilter implements ContainerRequestFilter, ContainerResponseFilt
         resp.getHeaders().putSingle("Access-Control-Allow-Headers",
                 "Origin, Content-Type, Accept, Authorization, X-Requested-With");
         resp.getHeaders().putSingle("Access-Control-Allow-Methods",
-                "GET, POST, PUT, DELETE, OPTIONS, HEAD");
+                "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD");
         resp.getHeaders().putSingle("Access-Control-Allow-Credentials", "true");
         resp.getHeaders().putSingle("Access-Control-Max-Age", "86400");
     }

@@ -6,18 +6,20 @@ import model.Usuario;
 import model.Visita;
 import model.Visitante;
 
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
+
+import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -28,45 +30,70 @@ import java.util.logging.Logger;
 @Consumes(MediaType.APPLICATION_JSON)
 public class VisitaResource {
 
-    @Context
-    private HttpServletRequest req;
-
-    private static final String QR_PREFIX = "VISITA_";
     private static final Logger LOG = Logger.getLogger(VisitaResource.class.getName());
 
     @PersistenceContext(unitName = "PenitenciariaPU")
     private EntityManager em;
 
-    private boolean tieneRol(String... rolesPermitidos) {
-        String rol = (String) req.getAttribute("rol");
-        LOG.info("ROL LEIDO EN RESOURCE = '" + rol + "'");
+    @Context
+    private SecurityContext securityContext;
 
-        if (rol == null) {
+    private String getUsername() {
+        Principal principal = securityContext != null ? securityContext.getUserPrincipal() : null;
+        return principal != null ? principal.getName() : null;
+    }
+
+    private boolean esAdmin() {
+        return securityContext != null && securityContext.isUserInRole("ADMIN");
+    }
+
+    private boolean esGuardia() {
+        return securityContext != null && securityContext.isUserInRole("GUARDIA");
+    }
+
+    private boolean esVisitante() {
+        return securityContext != null && securityContext.isUserInRole("VISITANTE");
+    }
+
+    private boolean esPropietarioVisita(Visita visita, String username) {
+        if (visita == null || username == null || username.trim().isEmpty()) {
             return false;
         }
 
-        for (String permitido : rolesPermitidos) {
-            if (rol.equalsIgnoreCase(permitido)) {
-                LOG.info("ROL OK: " + rol);
-                return true;
-            }
-        }
+        String ownerUsername = visita.getVisitante() != null
+                && visita.getVisitante().getUsuario() != null
+                ? visita.getVisitante().getUsuario().getUsername()
+                : null;
 
-        LOG.warning("ROL DENEGADO: " + rol);
-        return false;
+        return ownerUsername != null && ownerUsername.equalsIgnoreCase(username.trim());
+    }
+
+    private Visita buscarVisitaConRelaciones(Integer id) {
+        return em.createQuery(
+                "SELECT v FROM Visita v "
+                + "LEFT JOIN FETCH v.reo "
+                + "LEFT JOIN FETCH v.visitante "
+                + "LEFT JOIN FETCH v.visitante.usuario "
+                + "WHERE v.id = :id", Visita.class)
+                .setParameter("id", id)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
     }
 
     @GET
     @Path("/mis-citas")
+    @Produces(MediaType.APPLICATION_JSON)
     public Response getMisCitas() {
-        String username = (String) req.getAttribute("username");
-        String rol = (String) req.getAttribute("rol");
-
-        if (rol == null || !rol.equalsIgnoreCase("VISITANTE")) {
+        if (securityContext == null || !securityContext.isUserInRole("VISITANTE")) {
             return Response.status(Response.Status.FORBIDDEN)
                     .entity(Map.of("error", "Acceso denegado"))
                     .build();
         }
+
+        String username = securityContext.getUserPrincipal() != null
+                ? securityContext.getUserPrincipal().getName()
+                : null;
 
         if (username == null || username.trim().isEmpty()) {
             return Response.status(Response.Status.UNAUTHORIZED)
@@ -78,21 +105,24 @@ public class VisitaResource {
                 "SELECT DISTINCT v FROM Visita v "
                 + "LEFT JOIN FETCH v.reo "
                 + "LEFT JOIN FETCH v.visitante "
-                + "JOIN v.visitante vt "
-                + "JOIN vt.usuario u "
+                + "LEFT JOIN FETCH v.visitante.usuario "
+                + "JOIN v.visitante vis "
+                + "JOIN vis.usuario u "
                 + "WHERE u.username = :username "
-                + "ORDER BY v.fechaVisita DESC",
+                + "ORDER BY v.fechaVisita DESC, v.id DESC",
                 Visita.class)
                 .setParameter("username", username.trim())
                 .getResultList();
 
-        LOG.info("GET /api/visitas/mis-citas para username=" + username + ": " + citas.size() + " citas");
+        LOG.info("GET /visitas/mis-citas para username=" + username + ": " + citas.size() + " citas");
         return Response.ok(citas).build();
     }
 
     @GET
+    @Produces(MediaType.APPLICATION_JSON)
     public Response getAllVisitas() {
-        if (!tieneRol("ADMIN", "GUARDIA")) {
+        if (securityContext == null
+                || (!securityContext.isUserInRole("ADMIN") && !securityContext.isUserInRole("GUARDIA"))) {
             return Response.status(Response.Status.FORBIDDEN)
                     .entity(Map.of("error", "No autorizado"))
                     .build();
@@ -102,50 +132,42 @@ public class VisitaResource {
                 "SELECT DISTINCT v FROM Visita v "
                 + "LEFT JOIN FETCH v.reo "
                 + "LEFT JOIN FETCH v.visitante "
+                + "LEFT JOIN FETCH v.visitante.usuario "
                 + "ORDER BY v.fechaVisita DESC, v.id DESC",
                 Visita.class)
                 .getResultList();
 
-        LOG.info("GET /api/visitas -> " + visitas.size() + " visitas");
+        LOG.info("GET /visitas -> " + visitas.size() + " visitas");
         return Response.ok(visitas).build();
     }
 
     @GET
     @Path("{id}")
+    @RolesAllowed({"ADMIN", "GUARDIA", "VISITANTE"})
     public Response getById(@PathParam("id") Integer id) {
-        Visita v = em.createQuery(
-                "SELECT v FROM Visita v "
-                + "LEFT JOIN FETCH v.reo "
-                + "LEFT JOIN FETCH v.visitante "
-                + "WHERE v.id = :id",
-                Visita.class)
-                .setParameter("id", id)
-                .getResultStream()
-                .findFirst()
-                .orElse(null);
-
+        Visita v = buscarVisitaConRelaciones(id);
         if (v == null) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "No existe una visita con id: " + id))
-                    .build();
+            return Response.status(Response.Status.NOT_FOUND).build();
         }
 
+        // Blindaje: si es visitante, debe ser su visita
+        if (esVisitante()) {
+            if (!esPropietarioVisita(v, getUsername())) {
+                return Response.status(Response.Status.FORBIDDEN)
+                        .entity(Map.of("error", "No tienes acceso a esta visita"))
+                        .build();
+            }
+        }
         return Response.ok(v).build();
     }
 
     @POST
     @Transactional
+    @RolesAllowed("VISITANTE")
     public Response create(CrearVisitaRequest request) {
-        LOG.info("POST /api/visitas con DTO");
+        LOG.info("POST /visitas");
 
-        String username = (String) req.getAttribute("username");
-        String rol = (String) req.getAttribute("rol");
-
-        if (rol == null || !rol.equalsIgnoreCase("VISITANTE")) {
-            return Response.status(Response.Status.FORBIDDEN)
-                    .entity(Map.of("error", "Solo los visitantes pueden solicitar visitas"))
-                    .build();
-        }
+        String username = getUsername();
 
         if (username == null || username.trim().isEmpty()) {
             return Response.status(Response.Status.UNAUTHORIZED)
@@ -223,14 +245,13 @@ public class VisitaResource {
             );
             nuevaVisita.setAutorizado(false);
             nuevaVisita.setCodigoQr(null);
+            nuevaVisita.setValidada(false);
+            nuevaVisita.setFechaValidacion(null);
 
             em.persist(nuevaVisita);
             em.flush();
 
-            LOG.info("Visita creada correctamente. ID=" + nuevaVisita.getId()
-                    + ", username=" + username
-                    + ", visitanteId=" + visitante.getId()
-                    + ", reoId=" + reo.getId());
+            LOG.info("Visita creada. id=" + nuevaVisita.getId() + ", username=" + username);
 
             return Response.status(Response.Status.CREATED)
                     .entity(Map.of(
@@ -256,43 +277,21 @@ public class VisitaResource {
     @PUT
     @Path("{id}")
     @Transactional
+    @RolesAllowed({"ADMIN", "VISITANTE"})
     public Response update(@PathParam("id") Integer id, Visita visitaUpdate) {
-        String username = (String) req.getAttribute("username");
-        String rol = (String) req.getAttribute("rol");
+        Visita v = buscarVisitaConRelaciones(id);
 
-        if (rol == null) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(Map.of("error", "Usuario no identificado"))
-                    .build();
-        }
-
-        Visita v = em.find(Visita.class, id);
         if (v == null) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity(Map.of("error", "No existe una visita con id: " + id))
                     .build();
         }
 
-        if (rol.equalsIgnoreCase("VISITANTE")) {
-            if (username == null || username.trim().isEmpty()) {
-                return Response.status(Response.Status.UNAUTHORIZED)
-                        .entity(Map.of("error", "Usuario no identificado"))
-                        .build();
-            }
+        String username = getUsername();
 
-            String ownerUsername = v.getVisitante() != null
-                    && v.getVisitante().getUsuario() != null
-                    ? v.getVisitante().getUsuario().getUsername()
-                    : null;
-
-            if (ownerUsername == null || !ownerUsername.equalsIgnoreCase(username.trim())) {
-                return Response.status(Response.Status.FORBIDDEN)
-                        .entity(Map.of("error", "No puedes modificar una visita que no es tuya"))
-                        .build();
-            }
-        } else if (!rol.equalsIgnoreCase("ADMIN") && !rol.equalsIgnoreCase("GUARDIA")) {
+        if (esVisitante() && !esPropietarioVisita(v, username)) {
             return Response.status(Response.Status.FORBIDDEN)
-                    .entity(Map.of("error", "No autorizado"))
+                    .entity(Map.of("error", "No puedes modificar una visita que no es tuya"))
                     .build();
         }
 
@@ -315,46 +314,34 @@ public class VisitaResource {
                 v.setHoraSalida(visitaUpdate.getHoraSalida());
             }
 
-            if (visitaUpdate.getAutorizado() != null) {
-                v.setAutorizado(visitaUpdate.getAutorizado());
-            }
-
-            if (visitaUpdate.getCodigoQr() != null
-                    && !visitaUpdate.getCodigoQr().trim().isEmpty()) {
-                v.setCodigoQr(visitaUpdate.getCodigoQr().trim());
-            }
-
             if (visitaUpdate.getReo() != null && visitaUpdate.getReo().getId() != null) {
                 Reo reo = em.find(Reo.class, visitaUpdate.getReo().getId());
-
                 if (reo == null) {
                     return Response.status(Response.Status.BAD_REQUEST)
                             .entity(Map.of("error", "No existe un reo con id: " + visitaUpdate.getReo().getId()))
                             .build();
                 }
-
                 v.setReo(reo);
             }
 
-            if (visitaUpdate.getVisitante() != null && visitaUpdate.getVisitante().getId() != null) {
-                Visitante visitante = em.find(Visitante.class, visitaUpdate.getVisitante().getId());
-
-                if (visitante == null) {
-                    return Response.status(Response.Status.BAD_REQUEST)
-                            .entity(Map.of("error", "No existe un visitante con id: " + visitaUpdate.getVisitante().getId()))
-                            .build();
+            if (esAdmin()) {
+                if (visitaUpdate.getAutorizado() != null) {
+                    v.setAutorizado(visitaUpdate.getAutorizado());
                 }
 
-                if (rol.equalsIgnoreCase("VISITANTE")) {
-                    String ownerUsername = visitante.getUsuario() != null ? visitante.getUsuario().getUsername() : null;
-                    if (ownerUsername == null || !ownerUsername.equalsIgnoreCase(username.trim())) {
-                        return Response.status(Response.Status.FORBIDDEN)
-                                .entity(Map.of("error", "No puedes reasignar la visita a otro visitante"))
+                if (visitaUpdate.getVisitante() != null && visitaUpdate.getVisitante().getId() != null) {
+                    Visitante visitante = em.find(Visitante.class, visitaUpdate.getVisitante().getId());
+                    if (visitante == null) {
+                        return Response.status(Response.Status.BAD_REQUEST)
+                                .entity(Map.of("error", "No existe un visitante con id: " + visitaUpdate.getVisitante().getId()))
                                 .build();
                     }
+                    v.setVisitante(visitante);
                 }
 
-                v.setVisitante(visitante);
+                if (visitaUpdate.getCodigoQr() != null && !visitaUpdate.getCodigoQr().trim().isEmpty()) {
+                    v.setCodigoQr(visitaUpdate.getCodigoQr().trim());
+                }
             }
 
             em.flush();
@@ -368,17 +355,29 @@ public class VisitaResource {
         }
     }
 
+    @PATCH
+    @Path("{id}/autorizar")
+    @Transactional
+    @RolesAllowed("ADMIN")
+    public Response autorizar(@PathParam("id") Integer id) {
+        Visita v = em.find(Visita.class, id);
+        if (v == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+
+        v.setAutorizado(true);
+        // IMPORTANTE: aquí podrías disparar notificaciones o lógica extra
+        em.merge(v);
+        return Response.ok(Map.of("mensaje", "Visita autorizada")).build();
+    }
+
     @DELETE
     @Path("{id}")
     @Transactional
+    @RolesAllowed("ADMIN")
     public Response delete(@PathParam("id") Integer id) {
-        if (!tieneRol("ADMIN")) {
-            return Response.status(Response.Status.FORBIDDEN)
-                    .entity(Map.of("error", "No autorizado"))
-                    .build();
-        }
-
         Visita v = em.find(Visita.class, id);
+
         if (v == null) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity(Map.of("error", "No existe una visita con id: " + id))
@@ -392,99 +391,87 @@ public class VisitaResource {
     @POST
     @Path("qr/{id}")
     @Transactional
+    @RolesAllowed("VISITANTE")
     public Response generarQR(@PathParam("id") Integer id) {
-        String username = (String) req.getAttribute("username");
-        String rol = (String) req.getAttribute("rol");
-
-        if (rol == null || (!rol.equalsIgnoreCase("VISITANTE") && !rol.equalsIgnoreCase("ADMIN"))) {
-            return Response.status(Response.Status.FORBIDDEN)
-                    .entity(Map.of("error", "Solo visitantes o admin pueden generar QR"))
-                    .build();
-        }
-
-        Visita v = em.find(Visita.class, id);
+        Visita v = buscarVisitaConRelaciones(id);
         if (v == null) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "No existe una visita con id: " + id))
-                    .build();
+            return Response.status(Response.Status.NOT_FOUND).build();
         }
 
+        // Validar propiedad
+        if (!esPropietarioVisita(v, getUsername())) {
+            return Response.status(Response.Status.FORBIDDEN).build();
+        }
+
+        // Validar estado de negocio
         if (!Boolean.TRUE.equals(v.getAutorizado())) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "La visita no está autorizada"))
+                    .entity(Map.of("error", "Visita no autorizada"))
                     .build();
         }
 
-        if (rol.equalsIgnoreCase("VISITANTE")) {
-            if (username == null || username.trim().isEmpty()) {
-                return Response.status(Response.Status.UNAUTHORIZED)
-                        .entity(Map.of("error", "Usuario no identificado"))
-                        .build();
-            }
-            String ownerUsername = v.getVisitante() != null && v.getVisitante().getUsuario() != null
-                    ? v.getVisitante().getUsuario().getUsername() : null;
-
-            if (ownerUsername == null || !ownerUsername.equalsIgnoreCase(username.trim())) {
-                return Response.status(Response.Status.FORBIDDEN)
-                        .entity(Map.of("error", "No puedes generar QR para una visita que no es tuya"))
-                        .build();
-            }
-        }
-
-        String qrCode = "VISITA_" + UUID.randomUUID().toString().substring(0, 8) + "_" + id;
+        String qrCode = "VISITA_" + UUID.randomUUID().toString().substring(0, 8);
         v.setCodigoQr(qrCode);
-        v.setValidada(false); // Reset para permitir nueva validación
-        v.setFechaValidacion(null);
-
+        v.setValidada(false);
         em.merge(v);
-        em.flush();
 
-        return Response.ok(Map.of(
-                "mensaje", "QR generado correctamente",
-                "qr", qrCode,
-                "visitaId", v.getId()
-        )).build();
+        return Response.ok(Map.of("qr", qrCode)).build();
     }
 
     @POST
     @Path("validar-qr")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.APPLICATION_JSON)
-    @Transactional // Asegúrate de tener esto para persistir el cambio de 'validada'
+    @Transactional
     public Response validarQR(@FormParam("qr") String qrCode) {
-        if (!tieneRol("GUARDIA", "ADMIN")) {
+        if (securityContext == null || !securityContext.isUserInRole("GUARDIA")) {
             return Response.status(Response.Status.FORBIDDEN)
-                    .entity(Map.of("valido", false, "mensaje", "No autorizado"))
+                    .entity(Map.of(
+                            "valido", false,
+                            "mensaje", "No autorizado"
+                    ))
                     .build();
         }
 
         if (qrCode == null || qrCode.trim().isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("valido", false, "mensaje", "QR obligatorio"))
+                    .entity(Map.of(
+                            "valido", false,
+                            "mensaje", "QR obligatorio"
+                    ))
                     .build();
         }
 
         List<Visita> visitas = em.createQuery(
-                "SELECT v FROM Visita v LEFT JOIN FETCH v.visitante WHERE v.codigoQr = :qr", Visita.class)
+                "SELECT v FROM Visita v "
+                + "LEFT JOIN FETCH v.visitante "
+                + "WHERE v.codigoQr = :qr", Visita.class)
                 .setParameter("qr", qrCode.trim())
                 .getResultList();
 
         if (visitas.isEmpty()) {
-            return Response.ok(Map.of("valido", false, "mensaje", "QR no encontrado")).build();
+            return Response.ok(Map.of(
+                    "valido", false,
+                    "mensaje", "QR no encontrado"
+            )).build();
         }
 
         Visita v = visitas.get(0);
 
         if (!Boolean.TRUE.equals(v.getAutorizado())) {
-            return Response.ok(Map.of("valido", false, "mensaje", "Visita no autorizada")).build();
+            return Response.ok(Map.of(
+                    "valido", false,
+                    "mensaje", "Visita no autorizada"
+            )).build();
         }
 
-        // Comprobar si ya se validó
         if (Boolean.TRUE.equals(v.getValidada())) {
-            return Response.ok(Map.of("valido", false, "mensaje", "El QR ya fue usado")).build();
+            return Response.ok(Map.of(
+                    "valido", false,
+                    "mensaje", "El QR ya fue usado"
+            )).build();
         }
 
-        // Marcar como validada
         v.setValidada(true);
         v.setFechaValidacion(LocalDateTime.now());
 
