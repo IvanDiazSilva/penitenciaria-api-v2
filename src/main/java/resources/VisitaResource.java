@@ -423,25 +423,32 @@ public class VisitaResource {
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.APPLICATION_JSON)
     @Transactional
+
     public Response validarQR(@FormParam("qr") String qrCode) {
-        if (securityContext == null || !securityContext.isUserInRole("GUARDIA")) {
+
+        // 1. Verificación de Seguridad: Solo GUARDIA o ADMIN pueden validar
+        if (securityContext == null
+                || (!securityContext.isUserInRole("GUARDIA") && !securityContext.isUserInRole("ADMIN"))) {
+
             return Response.status(Response.Status.FORBIDDEN)
                     .entity(Map.of(
                             "valido", false,
-                            "mensaje", "No autorizado"
+                            "mensaje", "No tiene permisos para realizar esta acción"
                     ))
                     .build();
         }
 
+        // 2. Validación de entrada
         if (qrCode == null || qrCode.trim().isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of(
                             "valido", false,
-                            "mensaje", "QR obligatorio"
+                            "mensaje", "Código QR no proporcionado"
                     ))
                     .build();
         }
 
+        // 3. Búsqueda de la visita y su visitante
         List<Visita> visitas = em.createQuery(
                 "SELECT v FROM Visita v "
                 + "LEFT JOIN FETCH v.visitante "
@@ -449,39 +456,50 @@ public class VisitaResource {
                 .setParameter("qr", qrCode.trim())
                 .getResultList();
 
+        // 4. Caso: El QR no existe en la base de datos
         if (visitas.isEmpty()) {
             return Response.ok(Map.of(
                     "valido", false,
-                    "mensaje", "QR no encontrado"
+                    "mensaje", "Código QR no reconocido"
             )).build();
         }
 
         Visita v = visitas.get(0);
 
+        // 5. Caso: La visita existe pero no ha sido aprobada por el Admin
         if (!Boolean.TRUE.equals(v.getAutorizado())) {
             return Response.ok(Map.of(
                     "valido", false,
-                    "mensaje", "Visita no autorizada"
+                    "mensaje", "Acceso denegado: Visita pendiente de autorización"
             )).build();
         }
 
+        // 6. Caso: El QR es válido pero ya se escaneó anteriormente (Seguridad contra duplicados)
         if (Boolean.TRUE.equals(v.getValidada())) {
             return Response.ok(Map.of(
                     "valido", false,
-                    "mensaje", "El QR ya fue usado"
+                    "mensaje", "Acceso denegado: Este código ya ha sido utilizado"
             )).build();
         }
 
+        // 7. ÉXITO: Marcamos la entrada y guardamos cambios
         v.setValidada(true);
-        v.setFechaValidacion(LocalDateTime.now());
+        v.setFechaValidacion(LocalDateTime.now()); // Registro de la hora exacta de entrada
 
-        em.merge(v);
-        em.flush();
+        try {
+            em.merge(v);
+            em.flush();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(Map.of("valido", false, "mensaje", "Error al registrar el acceso"))
+                    .build();
+        }
 
+        // Enviamos respuesta positiva con el nombre del visitante para el guardia
         return Response.ok(Map.of(
                 "valido", true,
-                "visitante", v.getVisitante() != null ? v.getVisitante().getNombreCompleto() : "Desconocido",
-                "mensaje", "Acceso concedido"
+                "visitante", v.getVisitante() != null ? v.getVisitante().getNombreCompleto() : "Invitado",
+                "mensaje", "Acceso concedido. Puede ingresar."
         )).build();
     }
 }
